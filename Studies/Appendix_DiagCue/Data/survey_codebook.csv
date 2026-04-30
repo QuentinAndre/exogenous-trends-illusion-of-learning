@@ -1,0 +1,12 @@
+variable,description
+Duration,Survey duration in seconds
+StartDate,Survey start date and time
+EndDate,Survey end date and time
+CouldLearn_1,I managed to learn which characteristics of companies (if any) had an impact on the ROI they generated
+CouldLearn_2,I understood how the characteristics of companies relate to their ROIs
+CouldLearn_3,"I know which characteristics of companies affected their ROIs, and in which direction"
+subjective_learning,"Subjective Learning Index: Mean of CouldLearn_1, CouldLearn_2, and CouldLearn_3, plus 3"
+confidence,"Confidence in False Statements: Mean confidence rating that non-diagnostic attributes (Company Valuation, Number of Competitors, or Market Size) had an impact on ROI"
+turkid,Participant identifier (MTurk ID or Prolific ID)
+condition,"Experimental condition: ""Decreasing"" (condid = -2) or ""Increasing"" (condid = 2)"
+target,"Diagnostic attribute name: ""customers"", ""valuation"", or ""competitors"""

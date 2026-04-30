@@ -1,0 +1,18 @@
+variable,description
+EasierOrHarder,"First, would you say that learning the factors associated with higher payoffs was harder/easier than expected?"
+ProjectChoice,"Consider the three projects below. Based on what you have learned in the 20 rounds of the game, which project do you think has the highest payoff of all three?"
+Wager_1,"How many cents from your 10c bonus would you bet on this answer? For every 1c that you bet, you will earn 3c if your answer is correct. The more confident you are that your answer is correct, the more money you should bet."
+AttImport_MV,How predictive of the projects' payoffs do you think each the following characteristics were? - Market Valuation
+AttImport_SA,How predictive of the projects' payoffs do you think each the following characteristics were? - Sector of Activity
+AttImport_MS,How predictive of the projects' payoffs do you think each the following characteristics were? - Market Size
+AttImport_NC,How predictive of the projects' payoffs do you think each the following characteristics were? - Number of Competitors
+BecameConfident,"The more the game went on, the more confident I was in which attribute(s) were useful."
+NotEnoughRound,There were not enough rounds to learn about the attributes.
+CouldPredict,"Over time, I managed to learn which attribute(s) were good predictors of a project's payoff"
+AttribUseful,The attributes were good predictors of a project's payoff
+AttribDiff,Some attributes were better predictors than others
+SubjSlope,I earned more points at end of the game than at the beginning.
+turkid,MTurk worker ID
+condid,Condition ID (experimental condition assignment)
+bonusearned,Bonus amount earned (computed from wager and correct answer)
+DiffPredict,"From the description of the game alone, how difficult do you think that it will be for you to identify the factors that are associated with better payoffs?"

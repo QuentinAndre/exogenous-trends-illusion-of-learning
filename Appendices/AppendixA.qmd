@@ -1,0 +1,291 @@
+---
+title: "Appendix A - Simulation Code and Parameters"
+---
+
+This appendix presents the simulation code and parameters used to generate the results discussed in the paper. The full code is also available on the OSF repository of the project: <https://osf.io/unp6a/?view_only=bc12e7b98b004a69a194dec39c2f3d41>.
+
+## Imports
+
+```python
+import warnings
+from itertools import product
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+import seaborn as sns
+
+from scipy.signal import detrend
+
+warnings.filterwarnings("ignore")
+```
+
+## Simulation Code
+
+### Agent
+
+The `Agent` class represents a learner who updates beliefs about cue-outcome relationships across rounds. On each round, the agent:
+
+1. Chooses a prospect according to its choice strategy (positive test or random).
+2. Observes the payoff and compares it to the average of past payoffs.
+3. Updates beliefs: if the payoff exceeds expectations, the agent strengthens beliefs in the direction of the chosen prospect's cue values (relative to the unchosen alternatives); if the payoff falls below expectations, the agent weakens those beliefs.
+
+```python
+class Agent(object):
+    """
+    A learning agent.
+    """
+
+    def __init__(
+        self, name, init_belief,
+        random_choice_prob=0, payoffs_type="Increasing"
+    ):
+        self.name = name
+        self.current_beliefs = init_belief
+        self.past_beliefs = []
+        self.random_choice_prob = random_choice_prob
+        self.past_payoffs = []
+        self.current_round = 0
+        self.payoffs_type = payoffs_type
+
+    def __repr__(self):
+        return f"""Agent {self.name} at Round {self.current_round}.
+        Current Beliefs: {self.current_beliefs}
+        """
+
+    def compute_utility(self, prospects):
+        """
+        Compute the utility of a set of prospects, based on current beliefs.
+        """
+        utility = np.dot(prospects, self.current_beliefs)
+        return utility
+
+    def compute_choice_probabilities(self, prospects):
+        """
+        Compute the choice probability of a set of prospects,
+        based on current beliefs.
+        """
+        X = self.compute_utility(prospects)
+        eXB = np.exp(X)
+        return (eXB / eXB.sum(0)).flatten(order="F")
+
+    def choose_prospect(self, prospects, choice_strategy="Positive"):
+        """
+        Chooses a prospect among a set, based on a specified choice strategy
+        ('Positive' or 'Random').
+        """
+        n_options = prospects.shape[0]
+        options = np.arange(n_options)
+        if choice_strategy == "Positive":
+            p = self.compute_choice_probabilities(prospects)
+        else:
+            p = [1 / n_options] * n_options
+        return np.random.choice(options, p=p)
+
+    def advance_to_next_round(self, prospects, payoff):
+        """
+        Advance the agent to the next round:
+        * Selects a prospect among a set
+        * Compares the revealed payoff of the prospect to expectations
+        * Update the beliefs, and saves the current beliefs/payoff.
+        """
+        if np.random.uniform() > self.random_choice_prob:
+            choice = self.choose_prospect(
+                prospects, choice_strategy="Positive"
+            )
+        else:
+            choice = self.choose_prospect(
+                prospects, choice_strategy="Random"
+            )
+        # Compute the difference between attributes
+        # of chosen and non-chosen prospects.
+        chosen_prospect = prospects[choice, :]
+        other_prospects = np.delete(prospects, choice, axis=0)
+        diff_prospects = chosen_prospect - other_prospects.mean(axis=0)
+        if self.current_round > 0:
+            # Compare payoff to expectations
+            positive_payoff = (
+                1 if (payoff > np.mean(self.past_payoffs)) else -1
+            )
+            # Add difference to beliefs if payoff > expectations,
+            # otherwise subtract it.
+            self.current_beliefs += (
+                diff_prospects * positive_payoff * 0.25
+            )
+            self.past_payoffs.append(payoff)
+            self.past_beliefs.append(self.current_beliefs.copy())
+        else:
+            self.past_payoffs.append(payoff)
+            self.past_beliefs.append(self.current_beliefs.copy())
+        self.current_round += 1
+```
+
+### Learning Environment
+
+The `LearningEnvironment` class manages the simulation: it holds the prospect configurations for each round, the payoff sequences for each condition, and the population of agents. Calling `simulate()` runs all agents through all rounds.
+
+```python
+class LearningEnvironment(object):
+    """
+    A learning environment is defined by:
+    * A set of prospects
+    * Several possible deterministic set of payoffs that the agent
+      will receive over the multiple rounds
+    * A set of agents
+    """
+
+    def __init__(self, prospects=None, payoffs=None):
+        self.prospects = prospects
+        self.n_rounds = prospects.shape[0]
+        self.payoffs = payoffs
+        self.has_simulated = False
+        self.agents = []
+
+    def add_agents(self, agents):
+        """
+        Add a list of agents to the learning environment.
+        """
+        if self.has_simulated:
+            raise Exception(
+                "Agents cannot be added after the simulation "
+                "has completed."
+            )
+        else:
+            for agent in agents:
+                self.agents.append(agent)
+
+    def simulate(self):
+        """
+        Simulate the behavior of the agents in the learning environment.
+        """
+        for agent in self.agents:
+            for prospect, payoff in zip(
+                self.prospects, self.payoffs[agent.payoffs_type]
+            ):
+                agent.advance_to_next_round(prospect, payoff)
+        self.has_simulated = True
+
+    def get_end_beliefs(self):
+        """
+        Get the final beliefs of agents in a dataframe.
+        """
+        if not self.has_simulated:
+            raise Exception(
+                "The simulation needs to run before beliefs "
+                "can be returned!"
+            )
+        df_beliefs = pd.DataFrame(
+            [ag.name for ag in self.agents],
+            columns=["AgentName"],
+        )
+        beliefs = np.array(
+            [ag.current_beliefs for ag in self.agents], dtype=float
+        )
+        for i, b in enumerate(beliefs.T):
+            df_beliefs[f"Belief_{i+1}"] = b
+        return df_beliefs
+```
+
+## Main Simulation Parameters
+
+### Alternatives and Cues
+
+The simulation uses **J = 3** alternatives defined by **p = 6** cues, over **N = 20** rounds. Cue values are drawn from a standard normal distribution and are independent of the payoffs.
+
+```python
+J = 3   # Number of alternatives
+N = 20  # Number of rounds
+p = 6   # Number of cues
+
+np.random.seed(28390312)
+
+# Generating random prospects:
+cue_values = np.random.normal(0, 1, size=(J * N, p))
+```
+
+### Payoffs
+
+The payoff sequences are deterministic and identical for all agents within a condition. They are designed so that the average payoff increases, stays flat, or decreases over the 20 rounds, while the round-to-round variability is matched across conditions.
+
+```python
+payoffs_game = {
+    "Increasing": [
+        4.53, 2.40, 3.87, 3.40, 5.10, 4.57, 7.23, 5.03, 4.93, 7.13,
+        7.63, 7.37, 7.17, 7.37, 10.10, 8.33, 8.47, 9.60, 9.30, 9.13,
+    ],
+    "Flat": [
+        7.87, 5.37, 6.50, 5.70, 7.03, 6.17, 8.47, 5.90, 5.47, 7.30,
+        7.47, 6.87, 6.30, 5.83, 8.57, 6.43, 6.23, 7.00, 6.37, 5.83,
+    ],
+    "Decreasing": [
+        11.20, 8.37, 9.13, 7.97, 8.97, 7.73, 9.73, 6.80, 6.00, 7.50,
+        7.30, 6.37, 5.43, 4.33, 7.00, 4.53, 3.97, 4.40, 3.40, 2.53,
+    ],
+}
+```
+
+### Agents
+
+For each of the 3 payoff conditions (Increasing, Flat, Decreasing) and 3 choice strategies (100% Positive Test, Mixed, 100% Random), the simulation creates **1,000 agents**, for a total of 9,000 agents. All agents start with null beliefs (a zero vector of length *p*).
+
+```python
+N_AGENTS_EACH_TYPE = 1000
+PAYOFFS_TYPES = ["Increasing", "Flat", "Decreasing"]
+RANDOM_CHOICE_PROBS = [0, 0.5, 1]
+INITIAL_BELIEFS = [0, 0, 0, 0, 0, 0]
+
+agents_properties = product(
+    PAYOFFS_TYPES,
+    RANDOM_CHOICE_PROBS,
+    np.arange(0, N_AGENTS_EACH_TYPE),
+)
+
+agents = [
+    Agent(
+        f"{payoff_type}_{random_choice_prob}_{i}",
+        INITIAL_BELIEFS.copy(),
+        random_choice_prob=random_choice_prob,
+        payoffs_type=payoff_type,
+    )
+    for (payoff_type, random_choice_prob, i) in agents_properties
+]
+```
+
+### Running the Simulation
+
+```python
+# Reshaping the alternatives for the simulation.
+prospects_game = (
+    df_alternatives.set_index(["round", "alternative"])[cue_columns]
+    .values.reshape(-1, J, p)
+    .astype(float)
+)
+
+# Setting up learning environment
+learning_env_game = LearningEnvironment(
+    payoffs=payoffs_game, prospects=prospects_game
+)
+learning_env_game.add_agents(agents)
+learning_env_game.simulate()
+```
+
+### Computing Belief Strength
+
+After the simulation, we recover each agent's final beliefs and compute the average absolute belief strength across all cues. This measure captures the overall strength of the agent's (spurious) convictions about cue-outcome relationships.
+
+```python
+df_end_beliefs = learning_env_game.get_end_beliefs()
+df_end_beliefs["Trend"] = df_end_beliefs.AgentName.apply(
+    lambda x: x.split("_")[0]
+)
+df_end_beliefs["Choice_Strategy"] = df_end_beliefs.AgentName.apply(
+    lambda x: x.split("_")[1]
+).map({"0": "100% Positive Test", "0.5": "Mixed", "1": "100% Random"})
+
+df_end_beliefs["Strength_Beliefs"] = (
+    df_end_beliefs[[f"Belief_{i}" for i in range(1, 7)]]
+    .abs()
+    .mean(axis=1)
+)
+```

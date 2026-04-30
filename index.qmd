@@ -1,0 +1,14 @@
+## Preface {.unnumbered}
+
+This document contains the online appendices for the paper. Each appendix is a self-contained analysis with reproducible code. Click "Show Code" to expand any code block.
+
+| Appendix | Description |
+|----------|-------------|
+| A | Simulation Code and Parameters |
+| B | Robustness Check of the Simulation |
+| C | Replication of Study 1 with Experienced Decision-Makers |
+| D | Analysis of Participants' Choices in Study 1 (Diagnostic Cue Replication) |
+| E | Analysis of Participants' Choices in Study 2 |
+| F | Full Results for Study 3b |
+| G | Full Results for Study 3c |
+| H | Analysis of Testing Strategies in Study 4 |

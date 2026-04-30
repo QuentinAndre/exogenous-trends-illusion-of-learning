@@ -1,0 +1,30 @@
+variable,description
+turkid,Participant identifier (MTurk or Prolific ID)
+condition,Experimental condition: Flat or Increasing (from embedded data in game)
+condid,"Condition ID: 0=Flat, 1=Increasing (from post-survey embedded data)"
+message_type,Type of performance message shown during the game (from game data)
+startdate,Game start date and time
+enddate,Game end date and time
+time_to_completion,Time to complete the game in seconds (computed from enddate - startdate)
+could_learn_interim_1,Interim subjective learning measure at first checkpoint: confidence that attributes could be learned (from game data)
+could_learn_interim_2,Interim subjective learning measure at second checkpoint (from game data)
+could_learn_interim_3,Interim subjective learning measure at third checkpoint (from game data)
+belief_valuation,Post-game belief about predictiveness of Market Valuation attribute (from game data)
+belief_market_size,Post-game belief about predictiveness of Market Size attribute (from game data)
+belief_competitors,Post-game belief about predictiveness of Number of Competitors attribute (from game data)
+belief_sector_of_activity,Post-game belief about predictiveness of Sector of Activity attribute (from game data)
+Duration_Post,Post-survey duration in seconds (renamed from 'Duration (in seconds)')
+StartDate_Post,Post-survey start date and time (renamed from StartDate)
+EndDate_Post,Post-survey end date and time (renamed from EndDate)
+CouldLearn_1,"Agreement: I managed to learn which characteristics of companies had an impact on their ROI (post-survey, 1=Strongly disagree to 7=Strongly agree)"
+CouldLearn_2,"Agreement: I understood how the characteristics of companies relate to their ROIs (post-survey, 1=Strongly disagree to 7=Strongly agree)"
+CouldLearn_3,"Agreement: I know which characteristics of companies affected their ROIs, and in which direction (post-survey, 1=Strongly disagree to 7=Strongly agree)"
+Confidence_NC,"Confidence that Number of Competitors affected ROI (post-survey, 1=Not at all confident to 7=Extremely confident)"
+Confidence_MS,"Confidence that Market Size affected ROI (post-survey, 1=Not at all confident to 7=Extremely confident)"
+Confidence_CV,"Confidence that Market Valuation (Company Valuation) affected ROI (post-survey, 1=Not at all confident to 7=Extremely confident)"
+Confidence_SA,"Confidence that Sector of Activity affected ROI (post-survey, 1=Not at all confident to 7=Extremely confident)"
+Slope,Perceived improvement in performance over the course of the game (post-survey)
+Positive_Test_First,First attribute selected when performing a positive test strategy (post-survey)
+Negative_Test_First,First attribute selected when performing a negative test strategy (post-survey)
+Positive_Test_Second,Second attribute selected when performing a positive test strategy (post-survey)
+Negative_Test_Second,Second attribute selected when performing a negative test strategy (post-survey)

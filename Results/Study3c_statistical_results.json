@@ -1,0 +1,21 @@
+{
+  "collected_n": 420,
+  "final_n": 420,
+  "alpha_subjective_learning": 0.89,
+  "alpha_illusory_beliefs": 0.83,
+  "subjective_learning_flat_m": 0.54,
+  "subjective_learning_flat_sd": 1.01,
+  "subjective_learning_increasing_m": 0.83,
+  "subjective_learning_increasing_sd": 0.9,
+  "illusory_beliefs_flat_m": 4.56,
+  "illusory_beliefs_flat_sd": 0.68,
+  "illusory_beliefs_increasing_m": 4.65,
+  "illusory_beliefs_increasing_sd": 0.55,
+  "prob_superiority_flat_m": 83.88,
+  "prob_superiority_flat_sd": 15.13,
+  "prob_superiority_increasing_m": 87.25,
+  "prob_superiority_increasing_sd": 13.27,
+  "subjective_learning_comparison": "t(411.4) = 3.12, p = 0.002, d = 0.30",
+  "illusory_correlations_comparison": "t(399.2) = 1.52, p = 0.129, d = 0.15",
+  "prob_superiority_comparison": "t(409.9) = 2.43, p = 0.016, d = 0.24"
+}

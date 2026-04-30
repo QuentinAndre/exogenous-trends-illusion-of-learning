@@ -1,0 +1,13 @@
+variable,description
+turkid,Prolific participant ID
+condid,"Experimental condition: 0 = Flat (ROI stays constant over rounds), 1 = Increasing (ROI increases over rounds)"
+Duration_Post,Post-survey duration in seconds
+StartDate_Post,Post-survey start timestamp
+EndDate_Post,Post-survey end timestamp
+CouldLearn_1,"Agreement: 'I managed to learn which characteristics of companies (if any) had an impact on the ROI they generated' (Scale: -2=Strongly disagree to 2=Strongly agree)"
+CouldLearn_2,"Agreement: 'I understood how the characteristics of companies relate to their ROIs' (Scale: -2=Strongly disagree to 2=Strongly agree)"
+CouldLearn_3,"Agreement: 'I know which characteristics of companies affected their ROIs, and in which direction' (Scale: -2=Strongly disagree to 2=Strongly agree)"
+Confidence_NC,"Confidence rating: 'A larger Number of Competitors had a NEGATIVE impact on the ROI' (Scale: 1=Not at all confident to 5=Extremely confident)"
+Confidence_MS,"Confidence rating: 'A larger Market Size had a POSITIVE impact on the ROI' (Scale: 1=Not at all confident to 5=Extremely confident)"
+Confidence_CV,"Confidence rating: 'A larger Company Valuation had a POSITIVE impact on the ROI' (Scale: 1=Not at all confident to 5=Extremely confident)"
+Slope,"Perceived earning trajectory: 1 = 'The ROI tended to increase over time, independently of which company I decided to invest in', 2 = 'The ROI tended to stay constant over time, independently of which company I decided to invest in'"

@@ -1,0 +1,192 @@
+---
+title: "Appendix C - Replication of Study 1 with Experienced Decision-Makers"
+format:
+  html:
+    code-fold: true
+    code-summary: "Show Code"
+  pdf:
+    toc: false
+    number-sections: false
+
+execute:
+  warning: false
+  message: false
+  error: false
+  fig-width: 10
+  fig-height: 5.5
+  fig-dpi: 400
+knitr:
+  opts_chunk:
+    collapse: true
+---
+
+We conducted a conceptual replication of Study 1 as part of a classroom exercise with senior executives enrolled in "data-driven decision-making" programs at major European business schools in February, March, and September 2022.
+
+Participants played the same investment simulation as in Study 1, with one modification: the design included only the Increasing and Decreasing conditions (the Flat condition was dropped). After playing 20 rounds, participants completed the same post-game survey measuring their subjective sense of learning, confidence in their attribute judgments, and the extremity of their predictions.
+
+## Preamble: Data Loading and Wrangling
+
+```{r}
+library(tidyverse)
+library(Hmisc)
+library(effsize)
+library(glue)
+library(gt)
+library(here)
+
+i_am("Appendices/AppendixC.qmd")
+source(here("custom_theme.R"))
+
+survey_data <- read_csv(
+  here("Studies/Appendix_Exec", "Data", "survey_clean.csv")
+)
+
+items <- c(
+  "SubjInfluence",
+  "EdgeOver",
+  "BecameConfident",
+  "CouldPredict",
+  "AttribDiff",
+  "NotEnoughRound",
+  "N_Correct_Responses",
+  "Confidence",
+  "Extremity_Bets"
+)
+
+labels <- c(
+  "Pred. Influence on ROI",
+  "Pred. Edge over New Player",
+  "Confident in Ability to Predict ROI",
+  "Could Predict ROI by End Game",
+  "Some Attrib. Were More Predictive",
+  "Not Enough Rounds to Learn",
+  "# Correct Attributes Comparisons",
+  "Confidence in Attributes Comps.",
+  "Extremity of Bets"
+)
+```
+
+## Sample
+
+```{r}
+n_total <- nrow(survey_data)
+n_per <- survey_data %>% count(Condition)
+```
+
+The final sample consisted of `r n_total` executives (`r n_per$n[n_per$Condition == "Increasing"]` in the Increasing condition, `r n_per$n[n_per$Condition == "Decreasing"]` in the Decreasing condition).
+
+## Results
+
+```{r}
+# Compute t-tests and effect sizes for all DVs
+results <- map_dfr(seq_along(items), function(i) {
+  s <- items[i]
+  formula <- as.formula(paste(s, "~ Condition"))
+  tt <- t.test(formula, data = survey_data)
+  cd <- cohen.d(formula, data = survey_data)
+
+  # t.test alphabetical: Decreasing - Increasing.
+  # Negate for Increasing - Decreasing.
+  tibble(
+    DV = labels[i],
+    t = -tt$statistic,
+    df = tt$parameter,
+    p = tt$p.value,
+    d = -cd$estimate,
+    d_ci_lower = -cd$conf.int[2],
+    d_ci_upper = -cd$conf.int[1]
+  )
+})
+```
+
+### Survey Measures
+
+```{r}
+#| fig-height: 5.5
+
+# Compute t-stats for annotation
+df_results <- results %>%
+  mutate(
+    formatted_p = ifelse(p < .001, "p < .001", glue("p = {round(p, 3)}")),
+    label = glue(
+      "t({round(df, 0)}) = {round(t, 3)}",
+      "\n{formatted_p}\nd = {round(d, 2)}"
+    ),
+    item = factor(labels, levels = labels)
+  )
+
+# Pivot to long form
+survey_data_long <- survey_data %>%
+  pivot_longer(cols = all_of(items), names_to = "item") %>%
+  dplyr::select(ResponseId, Condition, item, value) %>%
+  mutate(item = factor(item, levels = items, labels = labels))
+
+# Compute y-position for annotations
+df_results <- df_results %>%
+  left_join(
+    survey_data_long %>%
+      group_by(item) %>%
+      summarise(y_pos = mean(value, na.rm = TRUE), .groups = "drop"),
+    by = "item"
+  )
+
+ggplot(survey_data_long, aes(x = Condition, y = value, color = Condition)) +
+  facet_wrap(~item, scales = "free_y") +
+  stat_summary(
+    fun = mean, geom = "point",
+    position = position_dodge(width = 0.5), size = 4
+  ) +
+  stat_summary(
+    fun.data = mean_cl_boot, geom = "errorbar", width = 0,
+    position = position_dodge(width = 0.5), show.legend = FALSE,
+    linewidth = 1.2
+  ) +
+  theme_matplotlib() +
+  scale_color_manual(values = c("#b63441", "#3f69c9")) +
+  labs(
+    x = element_blank(),
+    color = element_blank(),
+    y = "Survey Response"
+  ) +
+  guides(color = "none") +
+  geom_text(
+    data = df_results,
+    mapping = aes(x = 1.5, y = y_pos, label = label),
+    inherit.aes = FALSE,
+    color = "black",
+    size = 3
+  )
+```
+
+### Statistical Results
+
+```{r}
+results %>%
+  mutate(
+    d_ci = glue("[{round(d_ci_lower, 2)}, {round(d_ci_upper, 2)}]")
+  ) %>%
+  dplyr::select(DV, t, df, p, d, d_ci) %>%
+  gt() %>%
+  cols_label(
+    DV = "Dependent Variable",
+    t = md("*t*"),
+    df = md("*df*"),
+    p = md("*p*"),
+    d = md("*d*"),
+    d_ci = "95% CI"
+  ) %>%
+  fmt_number(columns = c(t, df), decimals = 1) %>%
+  fmt_number(columns = d, decimals = 2) %>%
+  fmt(
+    columns = p,
+    fns = function(x) ifelse(x < .001, "< .001", sprintf("%.3f", x))
+  ) %>%
+  tab_header(
+    title = "Independent-Samples t-Tests: Increasing vs. Decreasing Condition"
+  )
+```
+
+### Summary
+
+Consistent with the results of Study 1, executives exposed to an improving sequence of outcomes reported a greater subjective understanding of cue-outcome relationships and greater confidence in their ability to generate positive outcomes in the future.
+Critically, the number of correct attribute comparisons---the only objective measure of learning---did not differ between conditions (*d* = 0.01, *p* = .974), confirming that the manipulation affected subjective beliefs about learning without improving actual knowledge of the cue-outcome relationships.

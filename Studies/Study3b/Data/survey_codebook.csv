@@ -1,0 +1,24 @@
+variable,description
+StartDate,Survey start date and time
+EndDate,Survey end date and time
+RecordedDate,Date and time when response was recorded
+turkid,Participant identifier (from embedded data field turkid)
+condid,"Condition ID: 0 = Flat, 1 = Increasing (from embedded data field condid)"
+condition,"Experimental condition (computed from condid: 0 = Flat, 1 = Increasing)"
+replicate,Replicate number (from embedded data field replicate)
+included,Whether participant met inclusion criteria (computed: time_to_completion > 50 seconds)
+DV_1,"Changing the meeting practices had an impact on the performance of the team (from QID64 matrix question, DataExportTag: Questions_DV_1)"
+DV_2,"Some meeting practices resulted in better performance than others (from QID64 matrix question, DataExportTag: Questions_DV_2)"
+DV_3,"Overall, meeting practices mattered for the performance of the team (from QID64 matrix question, DataExportTag: Questions_DV_3)"
+DV_4_R,"The performance of the team didn't seem to be affected by meeting practices (from QID64 matrix question, DataExportTag: Questions_DV_4_R)"
+DV_4,The performance of the team didn't seem to be affected by meeting practices - reversed (computed: -DV_4_R)
+illusory_beliefs_index,"Index of illusory beliefs (computed: mean of DV_1, DV_2, DV_3, DV_4) + 3"
+best_duration,"Duration of meetings identified as best practice (renamed from 1_Duration, from QID67: 0=15 min, 1=30 min, 2=45 min, 3=60 min)"
+best_frequency,"Frequency of meetings identified as best practice (renamed from 1_Frequency, from QID68: 0=Once a week, 1=Twice a week, 2=Once a day)"
+best_content,"Content of meetings identified as best practice (renamed from 1_Content, from QID69: 0=Unstructured, 1=Focus on 'Wins', 2=Focus on 'Woes')"
+best_location,"Location of meetings identified as best practice (renamed from 1_Location, from QID70: 0=In-Person, 1=Online, 2=Hybrid)"
+worst_duration,"Duration of meetings identified as worst practice (renamed from 2_Duration, from QID67: 0=15 min, 1=30 min, 2=45 min, 3=60 min)"
+worst_frequency,"Frequency of meetings identified as worst practice (renamed from 2_Frequency, from QID68: 0=Once a week, 1=Twice a week, 2=Once a day)"
+worst_content,"Content of meetings identified as worst practice (renamed from 2_Content, from QID69: 0=Unstructured, 1=Focus on 'Wins', 2=Focus on 'Woes')"
+worst_location,"Location of meetings identified as worst practice (renamed from 2_Location, from QID70: 0=In-Person, 1=Online, 2=Hybrid)"
+prob_superiority,"Probability estimate that team following ""best"" meeting practices will generate more leads than team following ""worst"" practices (renamed from EdgeProbability, from QID71, range: 50-100%)"

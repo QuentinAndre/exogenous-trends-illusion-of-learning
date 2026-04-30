@@ -1,0 +1,636 @@
+---
+title: "Results - Social Media"
+format: html
+editor: visual
+execute: 
+  warning: false
+  error: false
+  
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Data Processing
+
+## Library and Functions
+
+```{r}
+library(dplyr, warn.conflicts = FALSE)
+options(dplyr.summarise.inform = FALSE)
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(tidymodels)
+library(glue)
+library(lfe)
+library(ltm)
+library(here)
+
+i_am("Studies/Study3b/Code/Analysis.qmd")
+
+mean_and_ci <- function(grouped_data, var) {
+  grouped_data %>%
+    summarise(
+      mean = mean({{ var }}, na.rm = TRUE),
+      sd = sd({{ var }}, na.rm = TRUE),
+      n = n()
+    ) %>%
+    mutate(
+      se = sd / sqrt(n),
+      llci = mean - qt(1 - (0.05 / 2), n - 1) * se,
+      ulci = mean + qt(1 - (0.05 / 2), n - 1) * se
+    )
+}
+
+generate_title <- function(model, alpha=NULL) {
+  coeffs <- model %>% tidy()
+  summ <- model %>% glance()
+  df <- summ %>%
+    slice(1) %>%
+    pull(df.residual)
+  t <- coeffs %>%
+    slice(2) %>%
+    pull(statistic)
+  pval <- coeffs %>%
+    slice(2) %>%
+    pull(p.value)
+  glue(
+    "t({df}) = {round(t, 3)}, {ifelse(pval < .001, 'p < .001', glue('p = {round(pval, 3)}'))}"
+  )
+}
+
+expand_combinations <- function(..., sep="_"){ 
+  grid <- expand.grid(...) 
+  grid %>% tidyr::unite("Result", everything(), sep=sep) %>% pull(Result) 
+  }
+
+
+calculate_gini <- function(x) {
+  x <- sort(x)
+  n <- length(x)
+  G <- 2 * sum((1:n) * x) / (n * sum(x)) - (n + 1) / n
+  return(G)
+}
+
+calculate_entropy <- function(x) {
+  return(-sum(ifelse(x > 0, x * log2(x), 0)))
+}
+
+calculate_beliefs_disp <- function(split, variable) {
+  analysis(split) %>%
+    group_by(condition, {{variable}}, .drop = FALSE) %>%
+    summarise(n = n()) %>%
+    mutate(prop = n / sum(n)) %>%
+    ungroup() %>%
+    group_by(condition) %>%
+    summarise(
+      Gini = calculate_gini(n),
+      HHI = sum((prop * 100)^2),
+      Entropy = calculate_entropy(prop),
+    )
+}
+```
+
+## Reading and Cleaning Data
+
+```{r setup, warning=false}
+game_data <- read_csv(here("Studies/Study3b", "Data", "game_data_clean.csv")) %>% drop_na(turkid)
+
+game_data_diff <- game_data %>%
+  mutate(gameduration = enddate - startdate) %>%
+  filter(gameduration > 50) %>% 
+  group_by(turkid) %>%
+  mutate(across(
+    c(Hook, Length, Tone, Content, CallToAction),
+    ~ ifelse(.x != lag(.x), 1, 0),
+    .names = "Changed_{col}"
+  )) %>%
+    mutate(across(
+    c(Hook, Length, Tone, Content, CallToAction),
+    ~ ifelse(.x != .x[1], 1, 0),
+    .names = "From_First_Changed_{col}"
+  )) %>%
+  mutate(timetochoose = as.numeric(choicestimes - lag(choicestimes))) %>%
+  ungroup() %>%
+  mutate(n_changes = rowSums(dplyr::select(., starts_with("Changed_"))),
+         n_changes_from_first= rowSums(dplyr::select(., starts_with("From_First_Changed_")))) %>%
+  drop_na(Changed_Hook, turkid)
+
+game_data_short <-
+  game_data_diff %>%
+  group_by(turkid, week) %>%
+  summarise(
+    gameduration = mean(gameduration),
+    n_changes =
+      mean(n_changes),
+    n_zero_changes =
+      mean(n_changes == 0)
+  ) %>%
+  group_by(turkid) %>%
+  summarise(
+    gameduration = mean(gameduration),
+    n_changes =
+      mean(n_changes),
+    n_zero_changes =
+      mean(n_zero_changes)
+  )
+
+
+data_wide <- game_data %>%
+  dplyr::select(turkid, week, Hook, Length, Tone, Content, CallToAction) %>%
+  group_by(turkid, week) %>%
+  mutate(choice_vector = list(c(Hook, Length, Tone, Content, CallToAction))) %>%
+  dplyr::select(turkid, week, choice_vector) %>%
+  pivot_wider(names_from = week, values_from = choice_vector) %>%
+  ungroup()
+
+hamming_distance <- function(vec1, vec2) {
+  sum(vec1 != vec2)
+}
+
+calculate_distances <- function(row) {
+  # Generate all combinations of rounds (assuming 3 rounds)
+  combinations <- combn(x = row, m = 2, simplify = FALSE)
+  # Calculate the Hamming distance for each pair
+  sapply(combinations, function(pair) hamming_distance(pair[[1]], pair[[2]]))
+}
+
+hamming_dist <- data_wide %>% dplyr::select(turkid) %>% mutate(hamming_dist=rowMeans(t(apply(data_wide[, -1], 1, calculate_distances))))
+
+survey_data <-
+  read_csv(here("Studies/Study3b", "Data", "survey_clean.csv")) %>%
+  left_join(game_data_short) %>%
+  drop_na(turkid) %>%
+  ungroup() %>%
+  left_join(hamming_dist) %>%
+  left_join(game_data %>% group_by(turkid) %>% summarise(n_distinct = n_distinct(Hook, Length, Tone, Content, CallToAction)) %>% dplyr::select(turkid, n_distinct)) %>%
+  left_join(game_data %>% group_by(turkid) %>% mutate(across(c(Hook, Length, Tone, Content, CallToAction), ~ as.numeric(.x == lag(.x, 7)))) %>% filter(row_number()==8) %>% rowwise() %>% mutate(changes_from_orig = sum(CallToAction, Content, Hook, Length, Tone)) %>% dplyr::select(turkid, changes_from_orig))
+
+survey_data_clean <-
+  survey_data %>%
+  mutate(
+    DV_4 = -DV_4_R,
+    condition = factor(
+      condid,
+      levels = c(0, 1),
+      labels = c("Flat", "Increasing")
+    )
+  ) %>%
+  mutate(
+    AttributesPredict = rowMeans(dplyr::select(., c(DV_1, DV_2, DV_3, DV_4))) + 3,
+    SubjectiveKnowledge = rowMeans(dplyr::select(., c(CouldLearn_1, CouldLearn_2, CouldLearn_3))) + 3,
+    included = gameduration > 50
+  ) %>%
+  filter(included)
+
+game_data_long <- survey_data_clean %>%
+  dplyr::select(turkid, `1_Hook`:`2_CTA`) %>%
+  rename(
+    Best_Tone = `1_Tone`,
+    Best_CallToAction = `1_CTA`,
+    Best_Content = `1_Content`,
+    Best_Hook = `1_Hook`,
+    Best_Length = `1_Length`,
+    Worst_Tone = `2_Tone`,
+    Worst_CallToAction = `2_CTA`,
+    Worst_Content = `2_Content`,
+    Worst_Hook = `2_Hook`,
+    Worst_Length = `2_Length`
+  ) %>%
+  right_join(game_data, by = join_by(turkid)) %>%
+  mutate(
+    Is_Best_Tone = (Best_Tone == Tone) * 1,
+    Is_Best_Content = (Best_Content == Content) * 1,
+    Is_Best_CallToAction = (Best_CallToAction == CallToAction) * 1,
+    Is_Best_Hook = (Best_Hook == Hook) * 1,
+    Is_Best_Length = (Best_Length == Length) * 1,
+    Is_Worst_Tone = (Worst_Tone == Tone) * 1,
+    Is_Worst_Content = (Worst_Content == Content) * 1,
+    Is_Worst_CallToAction = (Worst_CallToAction == CallToAction) * 1,
+    Is_Worst_Hook = (Worst_Hook == Hook) * 1,
+    Is_Worst_Length = (Worst_Length == Length) * 1,
+  ) %>%
+  rowwise() %>%
+  mutate(Is_Best_Avg = mean(c(
+    Is_Best_Tone, Is_Best_Content, Is_Best_CallToAction,
+    Is_Best_Hook, Is_Best_Length)),
+    Is_Worst_Avg = mean(c(
+    Is_Worst_Tone, Is_Worst_Content, Is_Worst_CallToAction,
+    Is_Worst_Hook, Is_Worst_Length
+  ))) %>% drop_na(Best_CallToAction)
+
+
+survey_data_choices <- survey_data_clean %>%
+  unite(
+    Best_Posts,
+    c(`1_Hook`, `1_Length`, `1_Tone`, `1_Content`, `1_CTA`),
+    remove = FALSE
+  ) %>%
+  unite(
+    Worst_Posts,
+    c(`2_Hook`, `2_Length`, `2_Tone`, `2_Content`, `2_CTA`),
+    remove = FALSE
+  ) %>%
+  unite(
+    Best_Posts_HookLength,
+    c(`1_Hook`, `1_Length`),
+    remove = FALSE
+  ) %>%
+  unite(
+    Best_Posts_ToneContentCTA,
+    c(`1_Tone`, `1_Content`, `1_CTA`),
+    remove = FALSE
+  ) %>%
+  unite(
+    Worst_Posts_HookLength,
+    c(`2_Hook`, `2_Length`),
+    remove = FALSE
+  ) %>%
+  unite(
+    Worst_Posts_ToneContentCTA,
+    c(`2_Tone`, `2_Content`, `2_CTA`),
+    remove = FALSE
+  ) %>%
+  mutate(
+    Best_Posts = factor(Best_Posts,
+      levels = expand_combinations(c(0, 1, 2), c(0, 1, 2), c(0, 1), c(0, 1, 2), c(0, 1))
+    ),
+    Worst_Posts = factor(Worst_Posts,
+      levels = expand_combinations(c(0, 1, 2), c(0, 1, 2), c(0, 1), c(0, 1, 2), c(0, 1))
+    ),
+    Best_Posts_HookLength = factor(Best_Posts_HookLength,
+      levels = expand_combinations(c(0, 1, 2), c(0, 1, 2)),
+      labels = expand_combinations(c("Question", "Cliffhanger", "Anecdote"),
+        c("< 400 words", "400-1400 words", "1400-2400 words"),
+        sep = " - "
+      )
+    ),
+    Best_Posts_ToneContentCTA = factor(Best_Posts_ToneContentCTA,
+      levels = expand_combinations(c(0, 1), c(0, 1, 2), c(0, 1)),
+      labels = expand_combinations(c("First P.", "Third P."), c("Text", "Text+Pic", "Text+Poll"), c("CTA", "No CTA"), sep = " - ")
+    ),
+    Worst_Posts_HookLength = factor(Worst_Posts_HookLength,
+      levels = expand_combinations(c(0, 1, 2), c(0, 1, 2)),
+      labels = expand_combinations(c("Question", "Cliffhanger", "Anecdote"),
+        c("< 400 words", "400-1400 words", "1400-2400 words"),
+        sep = " - "
+      )
+    ),
+    Worst_Posts_ToneContentCTA = factor(Worst_Posts_ToneContentCTA,
+      levels = expand_combinations(c(0, 1), c(0, 1, 2), c(0, 1)),
+      labels = expand_combinations(c("First P.", "Third P."),
+        c("Text", "Text+Pic", "Text+Poll"),
+        c("CTA", "No CTA"),
+        sep = " - "
+      )
+    )
+  )
+
+survey_data_clean %>% write_csv(here("Studies/Study3b", "Data", "survey_data_clean.csv"))
+game_data_long %>% write_csv(here("Studies/Study3b", "Data", "game_data_long.csv"))
+game_data_diff %>% write_csv(here("Studies/Study3b", "Data", "game_data_diff.csv"))
+```
+
+# Pre-Registered Analysis
+
+## Subjective Knowledge
+
+```{r}
+alpha_su <- cronbach.alpha(survey_data_clean %>% dplyr::select(CouldLearn_1:CouldLearn_3))$alpha
+model <-
+  lm(SubjectiveKnowledge ~ condition, data = survey_data_clean)
+
+survey_data_clean %>%
+  group_by(condition) %>%
+  mean_and_ci(SubjectiveKnowledge) %>%
+  ggplot(aes(x = condition, y = mean)) +
+  geom_errorbar(aes(ymin = llci, ymax = ulci), width = .1) +
+  geom_point() +
+  labs(
+    x = element_blank(),
+    y = glue("Subjective Knowledge (1-5; α = {round(alpha_su, 2)})"),
+    title = generate_title(model)
+  ) + theme_light() + theme(panel.grid.major.x=element_blank())
+```
+
+## Belief that Cues Influenced Outcomes
+
+```{r}
+model <-
+  lm(AttributesPredict ~ condition, data = survey_data_clean)
+alpha_ap <- cronbach.alpha(survey_data_clean %>% drop_na(c(DV_1, DV_2, DV_3, DV_4)) %>% dplyr::select(DV_1, DV_2, DV_3, DV_4))$alpha
+survey_data_clean %>%
+  group_by(condition) %>%
+  mean_and_ci(AttributesPredict) %>%
+  ggplot(aes(x = condition, y = mean)) +
+  geom_errorbar(aes(ymin = llci, ymax = ulci), width = .1) +
+  geom_point() +
+  labs(
+    x = element_blank(),
+    y = glue("Attributes Influence Outcomes (1-5; α = {round(alpha_ap, 2)})"),
+    title = generate_title(model)
+  ) + theme_light() + theme(panel.grid.major.x=element_blank())
+```
+
+## Subjective Likelihood of Superiority
+
+Subjective probability that the "best" post would outperform the "worst" post in likes:
+
+```{r}
+model <-
+  lm(EdgeProbability ~ condition, data = survey_data_clean)
+
+survey_data_clean %>%
+  group_by(condition) %>%
+  mean_and_ci(EdgeProbability) %>%
+  ggplot(aes(x = condition, y = mean)) +
+  geom_errorbar(aes(ymin = llci, ymax = ulci), width = .1) +
+  geom_point() +
+  labs(
+    x = element_blank(),
+    y = "Probability of 'Best'\nOutperforming 'Worst' (50-100)",
+    title = generate_title(model)
+  ) + theme_light() + theme(panel.grid.major.x=element_blank())
+```
+
+```{r}
+model <-
+  lm(changes_from_orig ~ condition, data = survey_data_clean)
+
+survey_data_clean %>%
+  group_by(condition) %>%
+  mean_and_ci(changes_from_orig) %>%
+  ggplot(aes(x = condition, y = mean)) +
+  geom_errorbar(aes(ymin = llci, ymax = ulci), width = .1) +
+  geom_point() +
+  labs(
+    x = element_blank(),
+    y = "Probability of 'Best'\nOutperforming 'Worst' (50-100)",
+    title = generate_title(model)
+  ) + theme_light() + theme(panel.grid.major.x=element_blank())
+```
+
+# Exploratory Analysis
+
+## Number of Attributes Changed from First Choice
+
+```{r}
+game_data_diff %>%
+  group_by(condition, week) %>%
+  mean_and_ci(n_changes_from_first) %>%
+  ungroup() %>% 
+  ggplot(aes(x = week, y = mean, color = condition)) +
+  geom_errorbar(aes(ymin = llci, ymax = ulci), width = .1, position = position_dodge(width = .3)) +
+  geom_point(position = position_dodge(width = .3)) +
+  labs(y = "Number of Attributes Changed\nfrom First Decision", x = element_blank()) +
+  scale_x_continuous(breaks = seq(2, 8, 1), labels = glue("Round {seq(2, 8)}"), minor_breaks = c())  + geom_smooth(data=game_data_diff, aes(x = week, y = n_changes_from_first, color = condition), method="lm", alpha=.3, formula=y~x)+ theme_light() +
+  theme(legend.title = element_blank())
+```
+
+## Number of Attribute Changes During the Game
+
+Participants could change, each round, between 0 and 5 attributes. How many did they change, and this value differ over time and across conditions?
+
+```{r}
+game_data_diff %>%
+  group_by(condition, week) %>%
+  mean_and_ci(n_changes) %>%
+  ungroup() %>% 
+  ggplot(aes(x = week, y = mean, color = condition)) +
+  geom_errorbar(aes(ymin = llci, ymax = ulci), width = .1, position = position_dodge(width = .3)) +
+  geom_point(position = position_dodge(width = .3)) +
+  labs(y = "Number of Attributes Changed\nfrom Previous Round", x = element_blank()) +
+  scale_x_continuous(breaks = seq(2, 8, 1), labels = glue("Round {seq(1, 7)}\nto {seq(2, 8)}"), minor_breaks = c())  + geom_smooth(data=game_data_diff, aes(x = week, y = n_changes, color = condition), method="lm", alpha=.3, formula=y~x)+ theme_light() +
+  theme(legend.title = element_blank())
+```
+
+We find evidence that, as the game goes on, participants in the "Increasing" condition change fewer attributes, suggesting that they are converging on a set of "predictive" attributes.
+
+A linear model with cluster-robust standard errors at the participant level, confirms the significance of this pattern:
+
+```{r}
+summary(felm(n_changes~week*condition | 0 |0 |turkid, data=game_data_diff))
+```
+
+Another explanation for this pattern would be that participants in the "Increasing" condition start "exploiting": They deliberate less, and simply choose what they chose before.
+
+If this is the case however, we should see that they take less time making their decisions:
+
+```{r}
+game_data_diff %>%
+  group_by(condition, week) %>%
+  mean_and_ci(timetochoose) %>%
+  ungroup() %>%
+  ggplot(aes(x = week, y = mean, color = condition)) +
+  geom_errorbar(aes(ymin = llci, ymax = ulci), width = .1, position = position_dodge(width = .3)) +
+  geom_point(position = position_dodge(width = .3)) +
+  labs(y = "Time Between Choices", x = element_blank()) +
+  scale_x_continuous(breaks = seq(2, 8, 1), labels = glue("Round {seq(1, 7)}\nto {seq(2, 8)}"), minor_breaks = c()) +
+  geom_smooth(data = game_data_diff, aes(x = week, y = timetochoose, color = condition), method = "lm", alpha = .3, formula = y ~ x) +
+  theme_light() +
+  theme(legend.title = element_blank())
+```
+
+We do not see that. While participants become faster to choose after Round 2, there is no evidence that participants in the "Increasing" condition choose faster than participants in the "Flat" condition.
+
+```{r}
+summary(felm(timetochoose~week*condition | 0 |0 |turkid, data=game_data_diff))
+```
+
+## Correspondence Between Choices and 'Best' ('Worst') Practices
+
+```{r}
+game_data_long %>%
+  group_by(condition, week) %>%
+  mean_and_ci(Is_Best_Avg) %>%
+  ungroup() %>%
+  ggplot(aes(x = week, y = mean, color = condition)) +
+  geom_errorbar(aes(ymin = llci, ymax = ulci), width = .1, position = position_dodge(width = .3)) +
+  geom_point(position = position_dodge(width = .3)) +
+  labs(y = "Percentage of Attributes\nIn Agreement with 'Best Practices'", x = element_blank()) +
+  scale_x_continuous(breaks = seq(1, 8, 1), labels = glue("Round {seq(1, 8)}"), minor_breaks = c()) +
+  geom_smooth(data = game_data_long, aes(x = week, y = Is_Best_Avg, color = condition), method = "lm", alpha = .3, formula = y ~ x) +
+  theme_light() +
+  theme(legend.title = element_blank())
+
+```
+
+```{r}
+game_data_long %>%
+  group_by(condition, week) %>%
+  mean_and_ci(Is_Worst_Avg) %>%
+  ungroup() %>%
+  ggplot(aes(x = week, y = mean, color = condition)) +
+  geom_errorbar(aes(ymin = llci, ymax = ulci), width = .1, position = position_dodge(width = .3)) +
+  geom_point(position = position_dodge(width = .3)) +
+  labs(y = "Percentage of Attributes\nIn Agreement with 'Worst Practices'", x = element_blank()) +
+  scale_x_continuous(breaks = seq(1, 8, 1), labels = glue("Round {seq(1, 8)}"), minor_breaks = c()) +
+  geom_smooth(data = game_data_long, aes(x = week, y = Is_Worst_Avg, color = condition), method = "lm", alpha = .3, formula = y ~ x) +
+  theme_light() +
+  theme(legend.title = element_blank())
+
+```
+
+## Analysis of Best/Worst Features
+
+### Dispersion of Beliefs for Best Features
+
+```{r}
+beliefs_dist_best <- survey_data_choices %>%
+  group_by(condition, Best_Posts, .drop = FALSE) %>%
+  summarise(n = n()) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup() %>%
+  group_by(condition) %>%
+  mutate(z = factor(fct_reorder(Best_Posts, desc(n)), labels = seq(1:108)))
+beliefs_dist_best %>% ggplot(aes(x = z, y = prop, fill = condition)) +
+  geom_bar(stat = "identity", width = 1, position = position_dodge()) +
+  geom_hline(yintercept = 1 / 108) +
+  labs(y = "% Identifying as 'Best'", x = "Unique Feature Combinations (Sorted by Popularity)", title = "Beliefs About Best Features") +
+  annotate("text", x = 65, y = 1 / 50, label = "Expected Under Random Beliefs") +
+  theme(axis.text.x = element_blank())
+
+```
+
+```{r}
+beliefs_splits <- bootstraps(survey_data_choices, times = 1000)
+boot_beliefs_best <- beliefs_splits %>%
+  mutate(Beliefs = map(splits, ~calculate_beliefs_disp(.x, variable=Best_Posts))) %>%
+  unnest(Beliefs)
+
+diff_beliefs_best <- boot_beliefs_best %>%
+  group_by(id) %>%
+  mutate(across(c(Gini, HHI, Entropy), function(x){x - lag(x)})) %>% dplyr::select(id:Entropy) %>% drop_na(Gini)
+
+```
+
+```{r}
+boot_ci_best <- diff_beliefs_best %>%
+  pull(Entropy) %>%
+  quantile(c(.025, 0.975))
+ggplot(boot_beliefs_best, aes(x = Entropy, fill = condition)) +
+  geom_histogram(bins = 30, position = "identity", alpha = .6) +
+  labs(
+    title = glue("Boot 95% CI of Difference: [{round(boot_ci_best[1], 3)}, {round(boot_ci_best[2], 3)}]"),
+    y = element_blank(), x = "Shannon Entropy"
+  )
+```
+
+```{r}
+boot_ci_best <- diff_beliefs_best %>%
+  pull(Gini) %>%
+  quantile(c(.025, 0.975))
+ggplot(boot_beliefs_best, aes(x = Gini, fill = condition)) +
+  geom_histogram(bins = 30, position = "identity", alpha = .6) +
+  labs(
+    title = glue("Boot 95% CI of Difference: [{round(boot_ci_best[1], 3)}, {round(boot_ci_best[2], 3)}]"),
+    y = element_blank(), x = "Gini Coefficient"
+  )
+```
+
+```{r}
+boot_ci_best <- diff_beliefs_best %>% 
+  pull(HHI) %>%
+  quantile(c(.025, 0.975))
+ggplot(boot_beliefs_best, aes(x=HHI, fill=condition)) +
+  geom_histogram(bins = 30, position="identity", alpha=.6) + labs(title=glue("Boot 95% CI of Difference: [{round(boot_ci_best[1], 3)}, {round(boot_ci_best[2], 3)}]"),
+                                                                  y=element_blank(), x="Herfindahl-Hirschman Index")
+```
+
+### Dispersion of Beliefs for Worst Features
+
+```{r}
+beliefs_dist_worst <- survey_data_choices %>%
+  group_by(condition, Worst_Posts, .drop = FALSE) %>%
+  summarise(n = n()) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup() %>%
+  group_by(condition) %>%
+  mutate(z = factor(fct_reorder(Worst_Posts, desc(n)), labels = seq(1:108)))
+beliefs_dist_worst %>% ggplot(aes(x = z, y = prop, fill = condition)) +
+  geom_bar(stat = "identity", width = 1, position = position_dodge()) +
+  geom_hline(yintercept = 1 / 108) +
+  labs(y = "% Identifying as 'Worst'", x = "Unique Feature Combinations (Sorted by Popularity)", title = "Beliefs About Worst Features") +
+  annotate("text", x = 65, y = 1 / 50, label = "Expected Under Random Beliefs") +
+  theme(axis.text.x = element_blank())
+```
+
+```{r}
+boot_beliefs_worst <- beliefs_splits %>%
+  mutate(Beliefs = map(splits, ~calculate_beliefs_disp(.x, variable=Worst_Posts))) %>%
+  unnest(Beliefs)
+
+diff_beliefs_worst <- boot_beliefs_worst %>%
+  group_by(id) %>%
+  mutate(across(c(Gini, HHI, Entropy), function(x){x - lag(x)})) %>% dplyr::select(id:Entropy) %>% drop_na(Gini)
+
+```
+
+```{r}
+boot_ci_worst <- diff_beliefs_worst %>%
+  pull(Entropy) %>%
+  quantile(c(.025, 0.975))
+ggplot(boot_beliefs_worst, aes(x = Entropy, fill = condition)) +
+  geom_histogram(bins = 30, position = "identity", alpha = .6) +
+  labs(
+    title = glue("Boot 95% CI of Difference: [{round(boot_ci_best[1], 3)}, {round(boot_ci_best[2], 3)}]"),
+    y = element_blank(), x = "Shannon Entropy"
+  )
+```
+
+```{r}
+boot_ci_worst <- diff_beliefs_worst %>%
+  pull(Gini) %>%
+  quantile(c(.025, 0.975))
+ggplot(boot_beliefs_worst, aes(x = Gini, fill = condition)) +
+  geom_histogram(bins = 30, position = "identity", alpha = .6) +
+  labs(
+    title = glue("Boot 95% CI of Difference: [{round(boot_ci_best[1], 3)}, {round(boot_ci_best[2], 3)}]"),
+    y = element_blank(), x = "Gini Coefficient"
+  )
+```
+
+```{r}
+boot_ci_worst <- diff_beliefs_worst %>% 
+  pull(HHI) %>%
+  quantile(c(.025, 0.975))
+ggplot(boot_beliefs_worst, aes(x=HHI, fill=condition)) +
+  geom_histogram(bins = 30, position="identity", alpha=.6) + labs(title=glue("Boot 95% CI of Difference: [{round(boot_ci_best[1], 3)}, {round(boot_ci_best[2], 3)}]"),
+                                                                  y=element_blank(), x="Herfindahl-Hirschman Index")
+```
+
+### Descriptive Table - Beliefs
+
+```{r}
+#| fig-height: 6
+table_best <- as.data.frame(table(survey_data_choices$Best_Posts_HookLength, survey_data_choices$Best_Posts_ToneContentCTA))
+table_best$Judgment <- "Best"
+
+
+
+
+table_worst <- as.data.frame(table(survey_data_choices$Worst_Posts_HookLength, survey_data_choices$Worst_Posts_ToneContentCTA))
+table_worst$Judgment <- "Worst"
+
+tables <- rbind(table_best, table_worst)
+
+ggplot(tables, aes(x = Var2, y = Var1, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq)) +
+  labs(
+    y = "Hook and Length",
+    x = "Tone, Content, and CTA"
+  ) +
+  guides(fill = "none")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, 
+                                                          hjust=1)) + facet_grid(Judgment~.)
+
+```
+
+```{r}
+# Selecting winner
+set.seed(242504) # Date
+survey_data_clean %>%
+  filter(EdgeProbability == 50) %>%
+  sample_n(1) %>%
+  dplyr::select(turkid, condid)
+```

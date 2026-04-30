@@ -1,0 +1,46 @@
+project:
+  type: book
+  output-dir: Appendices/_output
+
+book:
+  title: "Online Appendices"
+  chapters:
+    - index.qmd
+    - Appendices/AppendixA.qmd
+    - Appendices/AppendixB.qmd
+    - Appendices/AppendixC.qmd
+    - Appendices/AppendixD.qmd
+    - Appendices/AppendixE.qmd
+    - Appendices/AppendixF.qmd
+    - Appendices/AppendixG.qmd
+    - Appendices/AppendixH.qmd
+
+format:
+  html:
+    code-fold: true
+    code-summary: "Show Code"
+    theme: cosmo
+  pdf:
+    documentclass: report
+    code-fold: false
+    echo: true
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    geometry: margin=1in
+    fontsize: 11pt
+    linestretch: 1.3
+    code-block-bg: "#f5f5f5"
+    include-in-header:
+      text: |
+        \usepackage{titlesec}
+        \titleformat{\chapter}{\Large\bfseries}{}{0em}{}
+        \titlespacing*{\chapter}{0pt}{3.5ex plus 1ex minus .2ex}{2.3ex plus .2ex}
+        \renewcommand{\thesection}{\arabic{section}}
+        \renewcommand{\thechapter}{}
+
+execute:
+  warning: false
+  message: false
+  error: false
+  freeze: auto

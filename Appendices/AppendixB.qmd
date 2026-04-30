@@ -1,0 +1,93 @@
+---
+title: "Appendix B - Robustness Check of the Simulation"
+format: 
+  html:
+    code-fold: true
+    code-summary: "Show Code"
+  pdf: 
+    toc: false
+    number-sections: false
+execute:
+  warning: false
+  message: false
+  error: false
+  fig-width: 10
+  fig-height: 4
+knitr:
+  opts_chunk: 
+    collapse: true
+---
+
+```{r}
+library(tidyverse)
+library(here)
+
+i_am("Appendices/AppendixB.qmd")
+source(here("custom_theme.R"))
+df <- read_csv(here("Simulation", "Simulation_Results_RobustnessCheck.csv"))
+df_payoffs <- read_csv(
+  here("Simulation", "Simulation_Payoffs_RobustnessCheck.csv")
+)
+```
+This notebook shows the results of an alternative simulation with:
+
+* J = 5 alternatives, defined by p = 10 cues
+* Running for N = 15 rounds
+* ... with random payoffs and attribute values.
+
+### Payoffs
+
+```{r}
+ggplot(df_payoffs, aes(x = Round, y = Payoff, color = Trend)) +
+  geom_smooth(
+    method = "lm", se = FALSE, linetype="dashed", 
+    show.legend = FALSE
+    ) +
+  geom_point(size=3) +
+  scale_x_continuous(breaks = 1:20) +
+  labs(y = "Reward") +
+  scale_color_manual(values = c("#b63441", "#1f1e1e", "#3f69c9")) + 
+  theme_matplotlib()
+```
+
+### Results
+
+```{r}
+densities <- df %>%
+  group_split(Choice_Strategy, Trend) %>%
+  lapply(function(df) {
+    dens <- density(df$Strength_Beliefs, bw=.2)  # Compute density 
+    data.frame(x = dens$x, y = dens$y, 
+               Choice_Strategy = unique(df$Choice_Strategy),
+               Trend = unique(df$Trend))  # Convert to data frame
+  }) %>%
+  bind_rows() %>% 
+  mutate(Choice_Strategy = factor(
+    Choice_Strategy,
+    levels=c("100% Positive Test", "Mixed", "100% Random"))
+    ) 
+
+annotation_df <- data.frame(
+  x = c(.5, 1.1, 2.15),
+  y = c(1.6, 1.2, .9), 
+  Trend = c("Decreasing", "Flat", "Increasing"),
+  Choice_Strategy = factor(
+    c("100% Positive Test", "100% Positive Test","100% Positive Test"),
+    levels = c("100% Positive Test", "Mixed", "100% Random")
+    )
+)
+
+densities %>% ggplot(aes(x=x, y=y, color=Trend, linetype = Trend)) + 
+  geom_line(linewidth=.8) + 
+  scale_color_manual(values = c("#b63441", "#1f1e1e", "#3f69c9")) + 
+  facet_wrap(Choice_Strategy~.) + 
+  theme_matplotlib() +
+  scale_y_continuous() +
+  scale_linetype_manual(values=c("dotdash", "dashed", "solid")) +
+  labs(x="Strength of Beliefs", y="Density") +
+  geom_text(data = annotation_df, 
+            aes(x=x, y=y, label = Trend, color=Trend), 
+            inherit.aes = FALSE,
+            hjust=0) +
+  guides(color="none", linetype="none")
+```

@@ -1,0 +1,18 @@
+/.quarto/
+/_freeze/
+
+# Internal tooling
+.claude/
+
+# Stray generated artifacts
+Rplots.pdf
+*.tmp
+
+# Intermediate Quarto files
+Appendices/AppendixA.quarto_ipynb
+Appendices/*_files/
+Simulation/Simulation_Analysis_RobustnessCheck.pdf
+Simulation/Simulation_Setup.pdf
+Simulation/Simulation_Setup.tex
+# Pre-fitted models (regenerable from data + code)
+**/mxl_int_model.rds

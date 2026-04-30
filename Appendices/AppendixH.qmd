@@ -1,0 +1,406 @@
+---
+title: "Appendix H - Analysis of Testing Strategies in Study 4"
+format:
+  html:
+    code-fold: true
+    code-summary: "Show Code"
+  pdf:
+    toc: false
+    number-sections: false
+
+execute:
+  warning: false
+  message: false
+  error: false
+  fig-width: 10
+  fig-height: 4
+  fig-dpi: 400
+knitr:
+  opts_chunk:
+    collapse: true
+---
+
+## Preamble: Data Loading and Wrangling
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(glue)
+library(gt)
+library(mlogit)
+library(here)
+
+i_am("Appendices/AppendixH.qmd")
+source(here("custom_theme.R"))
+
+cols_subj_learn_interim <- c(
+    "could_learn_interim_1",
+    "could_learn_interim_2",
+    "could_learn_interim_3"
+)
+
+cols_illusory_beliefs_interim <- c(
+    "belief_valuation",
+    "belief_market_size",
+    "belief_sector_of_activity",
+    "belief_competitors"
+)
+
+survey_data <- read_csv(here("Studies/Study4", "Data", "survey_clean.csv")) %>%
+    mutate(Slope = 2 - Slope) %>%
+    rowwise() %>%
+    mutate(
+        SubjectiveLearning_Interim = mean(c_across(cols_subj_learn_interim)),
+        IllusoryBeliefs_Interim = mean(c_across(cols_illusory_beliefs_interim)),
+        condition = factor(
+            case_when(
+                condid == 0 ~ "Flat",
+                condid == 1 ~ "Increasing"
+            ),
+            levels = c("Flat", "Increasing")
+        ),
+        message_type = factor(
+            message_type,
+            levels = c("control", "positive_test", "negative_test"),
+            labels = c("Control", "Positive\nTest", "Negative\nTest")
+        )
+    ) %>%
+    dplyr::filter(time_to_completion > 110)
+```
+
+## Analysis of Testing Strategies
+
+Participants were asked to report the extent to which they used a positive testing strategy (seeking confirming evidence) and a negative testing strategy (seeking disconfirming evidence) in the first half (Rounds 1--10) and second half (Rounds 11--20) of the game.
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6
+testing_strategy <- survey_data %>%
+    dplyr::select(
+        turkid,
+        condid,
+        message_type,
+        Positive_Test_First,
+        Positive_Test_Second,
+        Negative_Test_First,
+        Negative_Test_Second
+    ) %>%
+    pivot_longer(
+        cols = c(
+            Positive_Test_First,
+            Positive_Test_Second,
+            Negative_Test_First,
+            Negative_Test_Second
+        )
+    ) %>%
+    mutate(
+        Strategy = str_split(name, "_") %>% map_chr(~ .x[[1]]),
+        Timing = str_split(name, "_") %>% map_chr(~ .x[[3]])
+    )
+
+label_map_time <- c("First" = "Rounds 1-10", "Second" = "Rounds 11-20")
+label_strategy <- c(
+    "Positive" = "... a Positive Test Strategy",
+    "Negative" = "... a Negative Test Strategy"
+)
+
+testing_strategy %>%
+    group_by(message_type, Timing, Strategy) %>%
+    count(value) %>%
+    mutate(pct = n / sum(n)) %>%
+    ggplot(aes(x = value, y = pct, fill = message_type)) +
+    geom_col(position = position_dodge2(), width = .6) +
+    facet_grid(
+        Strategy ~ Timing,
+        switch = "y",
+        labeller = labeller(Timing = label_map_time, Strategy = label_strategy)
+    ) +
+    scale_fill_manual(values = c("darkgrey", "green4", "red4")) +
+    scale_x_continuous(
+        breaks = c(1, 2, 3, 4, 5),
+        labels = c("Never", "< 50%", "\u2248 50%", "> 50%", "Always")
+    ) +
+    labs(
+        x = element_blank(),
+        y = "% of Rounds Reported Using...",
+        color = element_blank()
+    ) +
+    scale_y_continuous(
+        limits = c(0, .60),
+        breaks = seq(0, .60, by = .10),
+        labels = scales::label_percent()
+    ) +
+    theme_matplotlib() +
+    theme(
+        strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 90, vjust = 0.5, size = 12)
+    )
+```
+
+The left panels (Rounds 1--10) show that participants rarely used a Negative Test strategy (top panel) and instead favored a Positive Test strategy (bottom panel).
+
+The right panels (Rounds 11--20) confirm the effectiveness of our testing prompt: Participants in the "Negative Test" condition substantially increased their use of a Negative Test strategy (top right panel) and decreased their use of a Positive Test strategy (bottom right panel). In contrast, participants in the "Positive Test" condition further increased their use of a Positive Test strategy while maintaining a low use of a Negative Test strategy.
+
+## Further Evidence of Change in Testing Strategies
+
+A multinomial logit model (estimated on the choices made in Rounds 15--20, after the testing prompt was presented) provides further evidence that the prompt changed participants' testing strategies.
+
+```{r}
+# Load and prepare game choices data for the multinomial logit model
+choices_data <- read_csv(
+    here(
+        "Studies/Study4", "Data",
+        "game_choices_clean_with_attributes.csv"
+    )
+) %>%
+    arrange(condition) %>%
+    rename_with(
+        ~ recode(
+            .,
+            "valuation" = "Valuation",
+            "customers" = "Customers",
+            "competitors" = "Competitors",
+            "round" = "Round",
+            "project" = "Project",
+            "condition" = "Condition",
+            "project_chosen" = "Project_Chosen"
+        )
+    ) %>%
+    mutate(
+        Valuation = as.numeric(scale(Valuation)),
+        Customers = as.numeric(scale(Customers)),
+        Competitors = as.numeric(scale(Competitors)),
+        `Biotech` = as.numeric(activity == "Biotechnology"),
+        `Electronics` = as.numeric(activity == "Electronics"),
+        `Robotics` = as.numeric(activity == "Robotics"),
+        Flat = as.numeric(Condition == "Flat"),
+        Inc = as.numeric(Condition == "Increasing"),
+        Pos = as.numeric(message_type == "positive_test"),
+        Neg = as.numeric(message_type == "negative_test"),
+        Option_0 = as.numeric(Project == 0),
+        Option_1 = as.numeric(Project == 1),
+        Option_2 = as.numeric(Project == 2),
+        Project_Chosen = as.numeric(Project_Chosen),
+        Slope = condid,
+        Round = Round - 1
+    ) %>%
+    dplyr::arrange(turkid, Round, Project)
+
+interaction_columns <- c(
+    "Option_1", "Option_2", "Valuation", "Customers", "Competitors",
+    "Electronics", "Robotics"
+)
+
+for (col in interaction_columns) {
+    for (m in c("Pos", "Neg")) {
+        choices_data <- choices_data %>%
+            mutate(!!paste0(m, "_", col) := !!sym(col) * !!sym(m))
+    }
+    choices_data <- choices_data %>%
+        mutate(
+            !!paste0("Slope_", col) := !!sym(col) * Slope,
+            !!paste0("Round_", col) := !!sym(col) * Round,
+            !!paste0("ThreeWay_", col) := !!sym(col) * Round * Slope
+        )
+}
+
+choices_data_logit <- choices_data %>%
+    mutate(
+        choice_occasion = glue("{turkid}_{Round}"),
+        turkid = as.integer(factor(turkid))
+    ) %>%
+    arrange(turkid, Round, Project)
+
+df_mxl <- mlogit.data(
+    choices_data_logit %>%
+        filter(Round > 14 & Inc == 1) %>%
+        as.data.frame() |>
+        dplyr::select(
+            turkid, choice_occasion, Project, Project_Chosen,
+            Customers, Competitors, Valuation, Electronics, Robotics,
+            Pos_Customers, Pos_Competitors, Pos_Valuation,
+            Pos_Electronics, Pos_Robotics,
+            Neg_Customers, Neg_Competitors, Neg_Valuation,
+            Neg_Electronics, Neg_Robotics
+        ),
+    choice = "Project_Chosen",
+    shape = "long",
+    alt.var = "Project",
+    chid.var = "choice_occasion",
+    id.var = "turkid"
+)
+
+# Estimate the mixed logit model (cached to avoid re-running)
+cache_path <- here("Studies/Study4", "Data", "mxl_int_model.rds")
+
+if (file.exists(cache_path)) {
+    mxl_int <- readRDS(cache_path)
+} else {
+    mxl_int <- mlogit(
+        Project_Chosen ~
+            Customers + Competitors + Valuation +
+                Electronics + Robotics +
+                Pos_Customers + Pos_Competitors + Pos_Valuation +
+                Pos_Electronics + Pos_Robotics +
+                Neg_Customers + Neg_Competitors + Neg_Valuation +
+                Neg_Electronics + Neg_Robotics |
+                0,
+        data = df_mxl,
+        rpar = c(
+            Customers = "n", Competitors = "n", Valuation = "n",
+            Electronics = "n", Robotics = "n",
+            Pos_Customers = "n", Pos_Competitors = "n", Pos_Valuation = "n",
+            Pos_Electronics = "n", Pos_Robotics = "n",
+            Neg_Customers = "n", Neg_Competitors = "n", Neg_Valuation = "n",
+            Neg_Electronics = "n", Neg_Robotics = "n"
+        ),
+        correlation = TRUE,
+        panel = TRUE,
+        R = 1000,
+        halton = NA
+    )
+    saveRDS(mxl_int, cache_path)
+}
+
+# Compute marginal effects via contrasts
+model_inter_results <- mxl_int %>%
+    tidy() %>%
+    head(15)
+
+b <- mxl_int$coefficients[1:15]
+vcv <- (-solve(mxl_int$hessian)[1:15, 1:15])
+
+k <- 5
+contrasts_mat <- rbind(
+    cbind(diag(k), 0 * diag(k), 0 * diag(k)), # Control
+    cbind(diag(k), diag(k), 0 * diag(k)), # Pos Test
+    cbind(diag(k), 0 * diag(k), diag(k)) # Neg Test
+)
+
+conts <- as.numeric(contrasts_mat %*% b)
+errs <- sqrt(diag(contrasts_mat %*% vcv %*% t(contrasts_mat)))
+
+levels <- c(
+    "Customers", "Competitors", "Valuation",
+    "Electronics vs. Biotech", "Robotics vs. Biotech"
+)
+names <- rep(levels, times = 3)
+
+pvals_pos <- ifelse(model_inter_results$p.value < .001, "p < .001",
+    glue("p = {sprintf('%.3f', model_inter_results$p.value)}")
+)[6:10]
+pvals_neg <- ifelse(model_inter_results$p.value < .001, "p < .001",
+    glue("p = {sprintf('%.3f', model_inter_results$p.value)}")
+)[11:15]
+labels <- glue("{levels}\n(Inter_Pos: {pvals_pos})\n(Inter_Neg: {pvals_neg})")
+
+df_contrasts <- data.frame(
+    estimate = conts,
+    std.error = errs,
+    term = names,
+    message_type = factor(
+        rep(c("Control", "Positive Test", "Negative Test"), each = k),
+        levels = c("Control", "Positive Test", "Negative Test")
+    ),
+    term_names = factor(names, levels = levels, labels = labels)
+)
+
+ggplot(
+    df_contrasts,
+    aes(
+        x = estimate, y = term_names,
+        color = message_type, shape = message_type, fill = message_type
+    )
+) +
+    geom_point(size = 3, position = position_dodge(width = -.35)) +
+    geom_errorbarh(
+        aes(
+            xmin = estimate - 1.96 * std.error,
+            xmax = estimate + 1.96 * std.error
+        ),
+        height = 0, linewidth = 1,
+        position = position_dodge(width = -.35)
+    ) +
+    labs(
+        title = element_blank(),
+        x = "Standardized Marginal Effect\n(Estimated on Rounds 15-20 Choices)",
+        y = element_blank(),
+        color = element_blank(),
+        shape = element_blank(),
+        fill = element_blank()
+    ) +
+    theme_matplotlib() +
+    scale_x_continuous(breaks = seq(-36, 26, 4) / 10) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    theme(
+        axis.text.y = element_text(size = 10),
+        axis.text.x = element_text(size = 11),
+        legend.position = "top",
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        legend.background = element_rect(
+            fill = "white",
+            color = "white",
+            linewidth = 0
+        )
+    ) +
+    scale_y_discrete(limits = rev) +
+    scale_color_manual(values = c("darkgrey", "green4", "red4")) +
+    scale_fill_manual(values = c("darkgrey", "green4", "red4")) +
+    scale_shape_manual(values = c(21, 24, 25))
+```
+
+For participants in the "Control" and "Positive Test" conditions, the Number of Customers and Market Valuation are significant predictors of a project being chosen, and the Number of Competitors is a negative predictor. For participants in the "Negative Test" condition, the pattern reverses: these participants shift their selections toward attributes they had previously ignored, consistent with the adoption of a negative testing strategy.
+
+## Belief Regarding the Slope
+
+Finally, participants were asked to identify the slope condition they were assigned to.
+
+```{r}
+#| fig-height: 3.5
+survey_data |>
+    group_by(condition) %>%
+    count(Slope) %>%
+    mutate(pct = n / sum(n)) %>%
+    ggplot(aes(x = Slope, y = pct, fill = condition)) +
+    geom_col(position = position_dodge2(), width = .5) +
+    scale_fill_manual(values = c("#1f1e1e", "#3f69c9")) +
+    scale_x_continuous(
+        breaks = c(-1, 0, 1),
+        labels = c("Slope was Decreasing", "Slope was Flat", "Slope was Increasing")
+    ) +
+    theme_matplotlib() +
+    labs(
+        x = element_blank(),
+        y = "% of Participants Reporting That...",
+        fill = element_blank()
+    )
+```
+
+Most participants correctly identified their assigned condition: They realized that the "Increasing" condition had an increasing exogenous slope, and that the "Flat" condition had no slope.
+
+## Slope Beliefs by Prompt Type (Increasing Condition)
+
+Among participants in the "Increasing" condition, we further examine whether slope beliefs differed by prompt type.
+
+```{r}
+#| fig-height: 3.5
+library(Hmisc)
+survey_data %>%
+    dplyr::filter(condition == "Increasing") %>%
+    mutate(said_increasing = as.numeric(Slope == 1)) %>%
+    ggplot(aes(x = message_type, y = said_increasing, color = message_type)) +
+    stat_summary(fun.data = mean_cl_boot, geom = "pointrange", size = .8) +
+    scale_color_manual(values = c("darkgrey", "green4", "red4")) +
+    scale_y_continuous(
+        labels = scales::label_percent(),
+        limits = c(0, 1)
+    ) +
+    theme_matplotlib() +
+    labs(
+        x = element_blank(),
+        y = "% Reporting the Slope Was Increasing",
+        color = element_blank()
+    ) +
+    theme(legend.position = "none")
+```

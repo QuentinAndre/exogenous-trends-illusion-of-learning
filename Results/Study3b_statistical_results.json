@@ -1,0 +1,22 @@
+{
+  "collected_n": 323,
+  "final_n": 323,
+  "b_round_flat": "b = -0.024, p = 0.113",
+  "b_round_x_condition_nchanged": "b = -0.101, p < .001",
+  "b_round_increasing": "b = -0.125, p < .001",
+  "b_round_increasing_best": "b = 0.239, p < .001",
+  "b_round_x_condition_best": "b = -0.187, p < .001",
+  "b_round_increasing_worst": "b = -0.154, p < .001",
+  "b_round_x_condition_worst": "b = 0.126, p < .001",
+  "alpha_illusory_beliefs": 0.86,
+  "illusory_beliefs_flat_m": 4.31,
+  "illusory_beliefs_flat_sd": 0.68,
+  "illusory_beliefs_increasing_m": 4.61,
+  "illusory_beliefs_increasing_sd": 0.58,
+  "prob_superiority_flat_m": 83.13,
+  "prob_superiority_flat_sd": 12.52,
+  "prob_superiority_increasing_m": 86.16,
+  "prob_superiority_increasing_sd": 11.19,
+  "test_illusory_beliefs": "t(313.5) = 4.24, p < .001, d = 0.47",
+  "test_prob_superiority": "t(318.2) = 2.29, p = 0.023, d = 0.25"
+}

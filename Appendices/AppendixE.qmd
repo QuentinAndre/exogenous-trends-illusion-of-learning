@@ -1,0 +1,260 @@
+---
+title: "Appendix E - Analysis of Participants' Choices in Study 2"
+format:
+  html:
+    code-fold: true
+    code-summary: "Show Code"
+  pdf:
+    toc: false
+    number-sections: false
+
+execute:
+  warning: false
+  message: false
+  error: false
+  fig-width: 10
+  fig-height: 4
+  fig-dpi: 400
+knitr:
+  opts_chunk:
+    collapse: true
+---
+## Preamble: Data Loadings and Wrangling
+
+```{r}
+library(readr)
+library(tidyr)
+library(mlogit)
+library(stringr)
+library(glue)
+library(gt)
+library(gtsummary)
+library(tidyverse)
+library(tidymodels)
+library(broom)
+library(here)
+
+i_am("Appendices/AppendixE.qmd")
+source(here("custom_theme.R"))
+```
+
+## Model: Cue by Condition Interactions
+
+```{r}
+# Load the choice data for the multinomial logit model
+choices_data <- read_csv(
+    here(
+        "Studies/Study2", "Data",
+        "game_choices_clean_with_attributes.csv"
+    )
+) %>%
+    arrange(condition) %>%
+    rename_with(
+        ~ recode(
+            .,
+            "valuation" = "Valuation",
+            "customers" = "Customers",
+            "competitors" = "Competitors",
+            "round" = "Round",
+            "project" = "Project",
+            "condition" = "Condition",
+            "project_chosen" = "Project_Chosen"
+        )
+    )
+
+# Standardize Valuation, Customers, and Competitors
+choices_data <- choices_data %>%
+    mutate(
+        Valuation = as.numeric(scale(Valuation)),
+        Customers = as.numeric(scale(Customers)),
+        Competitors = as.numeric(scale(Competitors))
+    )
+
+# Add dummy variables for activity and Condition
+choices_data <- choices_data %>%
+    mutate(
+        Biotech = as.numeric(activity == "Biotechnology"),
+        `Electronics` = as.numeric(activity == "Electronics"),
+        `Robotics` = as.numeric(activity == "Robotics"),
+        Option_0 = as.numeric(Project == 0),
+        Option_1 = as.numeric(Project == 1),
+        Option_2 = as.numeric(Project == 2),
+        Project_Chosen = as.numeric(Project_Chosen)
+    ) %>%
+    dplyr::arrange(turkid, Round, Project)
+
+# Adjust Round and Slope
+choices_data <- choices_data %>%
+    mutate(
+        Slope = condid,
+        Round = Round - 1
+    )
+
+# Create interaction terms
+interaction_columns <- c(
+    "Option_1", "Option_2", "Valuation", "Customers", "Competitors",
+    "Electronics", "Robotics"
+)
+
+for (c in interaction_columns) {
+    choices_data <- choices_data %>%
+        mutate(
+            !!paste0("Slope_", c) := !!sym(c) * Slope,
+            !!paste0("Round_", c) := !!sym(c) * Round,
+            !!paste0("ThreeWay_", c) := !!sym(c) * Round * Slope
+        )
+}
+
+# Sort the final data
+choices_data_logit <- choices_data %>%
+    mutate(choice_occasion = glue("{turkid}_{Round}")) %>%
+    arrange(choice_occasion, Project)
+
+# Restrict to choices made during the second half of the game
+df_mxl <- mlogit.data(
+    choices_data_logit %>% filter(Round > 9) %>% as.data.frame(),
+    choice   = "Project_Chosen",
+    shape    = "long",
+    alt.var  = "Project",
+    chid.var = "choice_occasion", # task / round
+    id.var   = "turkid" # respondent id  (panel indicator)
+)
+```
+
+### Coefficients
+
+```{r}
+# Interaction model: Cues + Cues:Condition interaction.
+# Cache the full model object to avoid re-running the slow mlogit estimation.
+
+cache_path <- here("Studies/Study2", "Data", "mxl_int_model.rds")
+
+if (file.exists(cache_path)) {
+    mxl_int <- readRDS(cache_path)
+} else {
+    mxl_int <- mlogit(
+        Project_Chosen ~
+            Customers + Competitors + Valuation +
+                `Electronics` + `Robotics` +
+                Slope_Customers + Slope_Competitors + Slope_Valuation +
+                Slope_Electronics + Slope_Robotics |
+                0,
+        data = df_mxl,
+        rpar = c(
+            Customers = "n", Competitors = "n", Valuation = "n",
+            `Electronics` = "n", `Robotics` = "n",
+            Slope_Customers = "n", Slope_Competitors = "n",
+            Slope_Valuation = "n",
+            Slope_Electronics = "n",
+            Slope_Robotics = "n"
+        ),
+        correlation = TRUE,
+        panel = TRUE,
+        R = 1000,
+        halton = NA
+    )
+    saveRDS(mxl_int, cache_path)
+}
+
+model_inter_results <- mxl_int %>%
+    tidy() %>%
+    head(10) %>%
+    mutate(
+        term = c(
+            "Customers", "Competitors", "Valuation",
+            "Robotics vs. Biotech", "Electronics vs. Biotech",
+            "Slope x Customers", "Slope x Competitors",
+            "Slope x Valuation",
+            "Slope x (Robo vs. Bio)",
+            "Slope x (Elec vs. Bio)"
+        )
+    )
+model_inter_results %>%
+    gt(rowname_col = "term") %>%
+    fmt_number(columns = c(estimate, std.error, statistic)) %>%
+    fmt(columns = p.value, fns = style_pvalue) %>%
+    tab_row_group(label = "Interaction Effects", rows = 6:10) %>%
+    tab_row_group(label = "Main Effects", rows = 1:5) %>%
+    cols_label(
+        term = "Coeff.", estimate = "Estimate", std.error = "Std. Err.",
+        statistic = "t-stats", p.value = "p-value"
+    ) %>%
+    as_raw_html()
+```
+
+### Plotting the Marginal Effects
+
+```{r, warning=FALSE, results='asis'}
+# Plotting the marginal effects:
+## Define the contrasts matrix (Flat = 0, Increasing = 1)
+contrasts <- do.call(rbind, lapply(c(0, 1), function(i) {
+    cbind(diag(5), diag(5) * i) # Combine diagonal matrices for each i
+}))
+
+## Define parameters
+b <- mxl_int$coefficients[1:10] # Coefficients
+vcv <- (-solve(mxl_int$hessian)[1:10, 1:10]) # Variance-Covariance Matrix
+
+## Compute marginals
+conts <- t(b %*% t(contrasts)) # Effects
+errs <- sqrt(diag(contrasts %*% vcv %*% t(contrasts))) # Standard errors
+
+## Into a dataframe
+names <- rep(
+    c(
+        "Customers", "Competitors", "Valuation",
+        "Robotics vs. Biotech", "Electronics vs. Biotech"
+    ),
+    2
+)
+slope <- rep(c(0, 1), each = 5)
+levels <- c(
+    "Customers", "Competitors", "Valuation",
+    "Robotics vs. Biotech", "Electronics vs. Biotech"
+)
+pvals <- tail(ifelse(model_inter_results$p.value < .001, "p < .001",
+    glue("p = {sprintf('%.3f',model_inter_results$p.value)}")
+), 5)
+labels <- glue("{levels}\n(Inter: {pvals})")
+df_contrasts <- data.frame(
+    estimate = conts, std.error = errs,
+    term = factor(names,
+        levels = levels,
+        labels = labels
+    ),
+    slope = factor(slope,
+        levels = c(1, 0),
+        labels = c("Increasing", "Flat")
+    )
+)
+
+## Plotting the results
+ggplot(
+    df_contrasts,
+    aes(x = estimate, y = term, color = slope, shape = slope, fill = slope)
+) +
+    geom_point(size = 3, position = position_dodge(width = -.35)) +
+    geom_errorbarh(
+        aes(
+            xmin = estimate - std.error * 1.96,
+            xmax = estimate + std.error * 1.96
+        ),
+        height = 0, size = 1,
+        position = position_dodge(width = -.35)
+    ) +
+    labs(
+        title = element_blank(),
+        x = "Standardized Marginal Effect",
+        y = element_blank(),
+        color = element_blank(),
+        shape = element_blank(),
+        fill = element_blank()
+    ) +
+    theme_matplotlib() +
+    scale_x_continuous(breaks = seq(-16, 12, 4) / 10) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    scale_y_discrete(limits = rev) +
+    scale_color_manual(values = c("#3f69c9", "black")) +
+    scale_fill_manual(values = c("#3f69c9", "black")) +
+    scale_shape_manual(values = c(24, 16))
+```

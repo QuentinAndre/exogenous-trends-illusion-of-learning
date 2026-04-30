@@ -1,0 +1,16 @@
+variable,labels
+turkid,MTurk ID
+condition,Condition
+replicate,Replicate
+startdate,Start Date
+enddate,End Date
+day,Day
+chosen_color,Chosen Color
+chosen_shape,Chosen Shape
+chosen_size,Chosen Size
+chosen_texture,Chosen Texture
+choicestimes,Timing of Choice
+time_to_choose,Time to Choose
+n_matching_best,N. Attributes Matching 'Best'
+n_matching_worst,N. Attributes Matching 'Worst'
+n_changed,N. of Attributes Changed

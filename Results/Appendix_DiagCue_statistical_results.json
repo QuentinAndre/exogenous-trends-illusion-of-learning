@@ -1,0 +1,14 @@
+{
+  "collected_n": 800,
+  "final_n": 785,
+  "subjective_learning_decreasing_m": 3.13,
+  "subjective_learning_decreasing_sd": 1.2,
+  "subjective_learning_increasing_m": 3.79,
+  "subjective_learning_increasing_sd": 0.87,
+  "illusory_correlation_decreasing_m": 3.21,
+  "illusory_correlation_decreasing_sd": 0.89,
+  "illusory_correlation_increasing_m": 3.44,
+  "illusory_correlation_increasing_sd": 0.83,
+  "test_subjective_learning": "t(714.8) = 8.89, p < .001, d = 0.63",
+  "test_illusory_correlation": "t(779.2) = 3.66, p < .001, d = 0.26"
+}

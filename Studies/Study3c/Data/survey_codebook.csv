@@ -1,0 +1,28 @@
+variable,description
+StartDate,Survey start date and time (Qualtrics metadata)
+EndDate,Survey end date and time (Qualtrics metadata)
+RecordedDate,Date and time when response was recorded (Qualtrics metadata)
+turkid,Prolific participant ID (embedded data from pre-survey)
+condid,"Experimental condition ID: 0=Flat, 1=Increasing (embedded data from pre-survey)"
+condition,Experimental condition as factor: Flat or Increasing (computed from condid)
+replicate,Replicate number: 0-4 (embedded data from pre-survey)
+included,Whether participant met inclusion criteria: time_to_completion > 50 seconds (computed)
+DV_1,"Agreement: ""Changing the characteristics of items had an impact on the number of points they received"" (QID64, -2=Strongly disagree to 2=Strongly agree)"
+DV_2,"Agreement: ""Some characteristics of items resulted in more points than others"" (QID64, -2=Strongly disagree to 2=Strongly agree)"
+DV_3,"Agreement: ""Overall, the characteristics of items mattered for how many points they received"" (QID64, -2=Strongly disagree to 2=Strongly agree)"
+DV_4,"Agreement: ""The number of points received didn't seem affected by the characteristics of the items"", reversed (QID64, -2=Strongly disagree to 2=Strongly agree, computed as -DV_4_R)"
+DV_4_R,"Agreement: ""The number of points received didn't seem affected by the characteristics of the items"", original (QID64, -2=Strongly disagree to 2=Strongly agree)"
+illusory_beliefs_index,"Index of illusory beliefs: Mean of DV_1, DV_2, DV_3, DV_4 plus 3 (computed)"
+CouldLearn_1,"Agreement: ""I managed to learn which characteristics of items (if any) had an impact on the number of points they received"" (QID77, -2=Strongly disagree to 2=Strongly agree)"
+CouldLearn_2,"Agreement: ""I understood how the characteristics of items relate to the number of points they received"" (QID77, -2=Strongly disagree to 2=Strongly agree)"
+CouldLearn_3,"Agreement: ""I know which characteristics affected the number of points item received, and in which direction"" (QID77, -2=Strongly disagree to 2=Strongly agree)"
+confidence_in_learning_index,"Index of confidence in learning: Mean of CouldLearn_1, CouldLearn_2, CouldLearn_3 (computed)"
+best_color,"Color characteristic expected to generate HIGHER number of points: 0=Black, 1=Grey, 2=White (QID68 loop 1, renamed from 1_Color)"
+best_shape,"Shape characteristic expected to generate HIGHER number of points: 0=Circle, 1=Square, 2=Triangle (QID67 loop 1, renamed from 1_Shape)"
+best_size,"Size characteristic expected to generate HIGHER number of points: 0=Small, 1=Medium, 2=Large (QID69 loop 1, renamed from 1_Size)"
+best_texture,"Texture characteristic expected to generate HIGHER number of points: 0=Smooth, 1=Rugged (QID70 loop 1, renamed from 1_Texture)"
+worst_color,"Color characteristic expected to generate LOWER number of points: 0=Black, 1=Grey, 2=White (QID68 loop 2, renamed from 2_Color)"
+worst_shape,"Shape characteristic expected to generate LOWER number of points: 0=Circle, 1=Square, 2=Triangle (QID67 loop 2, renamed from 2_Shape)"
+worst_size,"Size characteristic expected to generate LOWER number of points: 0=Small, 1=Medium, 2=Large (QID69 loop 2, renamed from 2_Size)"
+worst_texture,"Texture characteristic expected to generate LOWER number of points: 0=Smooth, 1=Rugged (QID70 loop 2, renamed from 2_Texture)"
+prob_superiority,"Probability estimate: How likely it is that the ""higher points"" item will receive more points than the ""lower points"" item (QID71, renamed from EdgeProbability, 50-100%)"

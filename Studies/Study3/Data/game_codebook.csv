@@ -1,0 +1,16 @@
+variable,labels
+turkid,MTurk ID
+condition,Condition
+startdate,Start Date
+enddate,End Date
+day,Day
+chosen_hook,Chosen Hook
+chosen_length,Chosen Length
+chosen_tone,Chosen Tone
+chosen_content,Chosen Content
+chosen_cta,Chosen Call to Action
+choicestimes,Timing of Choice
+time_to_choose,Time to Choose
+n_matching_best,N. Attributes Matching 'Best'
+n_matching_worst,N. Attributes Matching 'Worst'
+n_changed,N. of Attributes Changed

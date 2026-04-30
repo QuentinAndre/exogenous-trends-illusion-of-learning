@@ -1,0 +1,30 @@
+variable,description
+StartDate,Survey start date and time
+EndDate,Survey end date and time
+RecordedDate,Date and time when response was recorded
+turkid,Prolific participant ID (embedded data)
+condid,"Experimental condition ID: 0=Flat, 1=Increasing (embedded data)"
+condition,Experimental condition as factor: Flat or Increasing (computed from condid)
+replicate,Replicate number (embedded data)
+included,Whether participant met inclusion criteria: time_to_completion > 50 seconds (computed)
+DV_1,Agreement: Changing the features of posts had an impact on the engagement they received (1=Strongly disagree to 5=Strongly agree)
+DV_2,Agreement: Some features of posts resulted in stronger engagement than others (1=Strongly disagree to 5=Strongly agree)
+DV_3,"Agreement: Overall, the features of posts mattered for how much engagement they received (1=Strongly disagree to 5=Strongly agree)"
+DV_4,"Agreement: The engagement received didn't seem affected by the features of the posts, reversed (1=Strongly disagree to 5=Strongly agree, computed as -DV_4_R)"
+DV_4_R,"Agreement: The engagement received didn't seem affected by the features of the posts, original (1=Strongly disagree to 5=Strongly agree)"
+illusory_beliefs_index,"Index of illusory beliefs: Mean of DV_1, DV_2, DV_3, DV_4 plus 3 (computed)"
+CouldLearn_1,Agreement: I managed to learn which features of posts (if any) had an impact on the engagement they received (1=Strongly disagree to 5=Strongly agree)
+CouldLearn_2,Agreement: I understood how the features of posts relate to their engagement (1=Strongly disagree to 5=Strongly agree)
+CouldLearn_3,"Agreement: I know which features affected the engagement of posts, and in which direction (1=Strongly disagree to 5=Strongly agree)"
+confidence_in_learning_index,"Index of confidence in learning: Mean of CouldLearn_1, CouldLearn_2, CouldLearn_3 (computed)"
+best_hook,"Hook feature expected to generate STRONG engagement: 0=Question, 1=Cliffhanger, 2=Anecdote (renamed from 1_Hook)"
+best_length,"Length feature expected to generate STRONG engagement: 0=Less than 400 characters, 1=400-1400 characters, 2=1400-2400 characters (renamed from 1_Length)"
+best_tone,"Tone feature expected to generate STRONG engagement: 0=First-Person, 1=Third-Person (renamed from 1_Tone)"
+best_content,"Content feature expected to generate STRONG engagement: 0=Text, 1=Text + Picture, 2=Text + Poll (renamed from 1_Content)"
+best_cta,"Call to Action feature expected to generate STRONG engagement: 0='Like and Comment', 1=No Call to Action (renamed from 1_CTA)"
+worst_hook,"Hook feature expected to generate WEAK engagement: 0=Question, 1=Cliffhanger, 2=Anecdote (renamed from 2_Hook)"
+worst_length,"Length feature expected to generate WEAK engagement: 0=Less than 400 characters, 1=400-1400 characters, 2=1400-2400 characters (renamed from 2_Length)"
+worst_tone,"Tone feature expected to generate WEAK engagement: 0=First-Person, 1=Third-Person (renamed from 2_Tone)"
+worst_content,"Content feature expected to generate WEAK engagement: 0=Text, 1=Text + Picture, 2=Text + Poll (renamed from 2_Content)"
+worst_cta,"Call to Action feature expected to generate WEAK engagement: 0='Like and Comment', 1=No Call to Action (renamed from 2_CTA)"
+prob_superiority,"Probability (50-100%) that a post with ""strong engagement"" features will receive more likes than a post with ""weak engagement"" features (renamed from EdgeProbability)"
