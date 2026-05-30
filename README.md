@@ -54,3 +54,17 @@ quarto render
 Appendix A (simulation code) requires Python with `numpy`, `scipy`, `pandas`, `matplotlib`, and `seaborn`. All other appendices use R only.
 
 Pre-fitted mixed logit models were not included in the repository for full reproducibility check. Rendering without cached models will re-estimate them, which takes several minutes per study.
+
+## Citation
+
+This is a working paper. To cite it, please cite the manuscript (see [`CITATION.cff`](CITATION.cff) for machine-readable metadata):
+
+> André, Q., & de Langhe, B. (2024). *Exogenous Trends and the Illusion of Learning*. Working paper.
+
+Overview: https://quentinandre.net/posts/learning-with-trends/
+
+## License
+
+- Original **code** by the authors is released under the [MIT License](LICENSE).
+- Original **text, figures, and author-collected data** are released under [CC-BY-4.0](LICENSE-CC-BY-4.0.txt).
+- Any **third-party data or code** redistributed here remains under its original license and terms.
