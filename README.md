@@ -61,8 +61,6 @@ This is a working paper. To cite it, please cite the manuscript (see [`CITATION.
 
 > André, Q., & de Langhe, B. (2024). *Exogenous Trends and the Illusion of Learning*. Working paper.
 
-Overview: https://quentinandre.net/posts/learning-with-trends/
-
 ## License
 
 - Original **code** by the authors is released under the [MIT License](LICENSE).
