@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite the associated paper below."
+title: "Exogenous Trends and the Illusion of Learning"
+type: dataset
+authors:
+  - given-names: Quentin
+    family-names: André
+  - given-names: Bart
+    name-particle: de
+    family-names: Langhe
+repository-code: "https://github.com/QuentinAndre/exogenous-trends-illusion-of-learning"
+url: "https://quentinandre.net/posts/learning-with-trends/"
+license:
+  - MIT
+  - CC-BY-4.0
+preferred-citation:
+  type: unpublished
+  title: "Exogenous Trends and the Illusion of Learning"
+  authors:
+    - given-names: Quentin
+      family-names: André
+    - given-names: Bart
+      name-particle: de
+      family-names: Langhe
+  year: 2024
+  notes: "Working paper."
