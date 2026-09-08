@@ -38,18 +38,5 @@
   "ancova_ib_flat_pt": "b = 0.12, p = 0.112",
   "ancova_ib_flat_nt": "b = 0.08, p = 0.290",
   "ancova_ib_interaction_pt_trend": "b = 0.10, p = 0.354",
-  "ancova_ib_interaction_nt_trend": "b = -0.52, p < .001",
-  "testing_strategy_pt_first_atleast_most": "70%",
-  "testing_strategy_pt_first_always": "33%",
-  "testing_strategy_nt_first_most": "9%",
-  "testing_strategy_pt_second_pt_always": "56%",
-  "testing_strategy_nt_second_nt_most": "68%",
-  "trend_detection_increasing_pct": "85%",
-  "trend_detection_chisq_cond": "χ²(1) = 280.38, p < .001",
-  "trend_detection_chisq_prompt": "χ²(2) = 7.70, p = 0.021",
-  "trend_detection_nt_pct": "91%",
-  "trend_detection_control_pct": "84%",
-  "trend_detection_pt_pct": "78%",
-  "trend_detection_flat_reported_incr_pct": "32%",
-  "trend_detection_chisq_prompt_inc": "χ²(2) = 9.39, p = 0.009"
+  "ancova_ib_interaction_nt_trend": "b = -0.52, p < .001"
 }

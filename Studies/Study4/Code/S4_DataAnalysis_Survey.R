@@ -16,10 +16,12 @@ cols_subj_learn_final <- c(
   "CouldLearn_3"
 )
 
-cols_illusory_beliefs_final <- c("Confidence_NC",
-                           "Confidence_MS",
-                           "Confidence_CV",
-                           "Confidence_SA")
+cols_illusory_beliefs_final <- c(
+  "Confidence_NC",
+  "Confidence_MS",
+  "Confidence_CV",
+  "Confidence_SA"
+)
 
 cols_subj_learn_interim <- c(
   "could_learn_interim_1",
@@ -27,10 +29,12 @@ cols_subj_learn_interim <- c(
   "could_learn_interim_3"
 )
 
-cols_illusory_beliefs_interim <- c("belief_valuation",
-                                "belief_market_size",
-                                "belief_sector_of_activity",
-                                "belief_competitors")
+cols_illusory_beliefs_interim <- c(
+  "belief_valuation",
+  "belief_market_size",
+  "belief_sector_of_activity",
+  "belief_competitors"
+)
 
 
 survey_data_all <- read_csv(here("Studies/Study4", "Data", "survey_clean.csv")) %>%
@@ -41,8 +45,8 @@ survey_data_all <- read_csv(here("Studies/Study4", "Data", "survey_clean.csv")) 
     IllusoryBeliefs_Interim = mean(c_across(cols_illusory_beliefs_interim)),
     SubjectiveLearning_Final = mean(c_across(cols_subj_learn_final)),
     IllusoryBeliefs_Final = mean(c_across(cols_illusory_beliefs_final)),
-    SubjectiveLearning_Delta = SubjectiveLearning_Final-SubjectiveLearning_Interim,
-    IllusoryBeliefs_Delta = IllusoryBeliefs_Final-IllusoryBeliefs_Interim,    
+    SubjectiveLearning_Delta = SubjectiveLearning_Final - SubjectiveLearning_Interim,
+    IllusoryBeliefs_Delta = IllusoryBeliefs_Final - IllusoryBeliefs_Interim,
     condition = factor(
       case_when(
         condid == 0 ~ "Flat",
@@ -51,9 +55,13 @@ survey_data_all <- read_csv(here("Studies/Study4", "Data", "survey_clean.csv")) 
       levels =
         c("Flat", "Increasing")
     ),
-    message_type = factor(message_type, levels=c("control", 
-                                                 "positive_test", "negative_test"),
-                          labels = c("Control", "Positive\nTest", "Negative\nTest"))
+    message_type = factor(message_type,
+      levels = c(
+        "control",
+        "positive_test", "negative_test"
+      ),
+      labels = c("Control", "Positive\nTest", "Negative\nTest")
+    )
   )
 
 survey_data <- survey_data_all %>%
@@ -66,7 +74,8 @@ cronbach.alpha(survey_data %>% dplyr::select(cols_subj_learn_interim))
 tidy(
   lm(
     scale(SubjectiveLearning_Interim) ~ factor(
-      condition, levels = c("Flat", "Increasing")
+      condition,
+      levels = c("Flat", "Increasing")
     ),
     data = survey_data
   )
@@ -74,14 +83,16 @@ tidy(
 
 
 inc_vs_flat <- cohens_d(
-  SubjectiveLearning_Interim ~ condition, 
-  data=survey_data
-) %>% 
-  pull(Cohens_d) %>% abs()
+  SubjectiveLearning_Interim ~ condition,
+  data = survey_data
+) %>%
+  pull(Cohens_d) %>%
+  abs()
 
-loc_inc_vs_flat <- survey_data %>% 
-  group_by(condition) %>% summarize(m=mean(SubjectiveLearning_Interim)) %>% 
-  pull(m) %>% 
+loc_inc_vs_flat <- survey_data %>%
+  group_by(condition) %>%
+  summarize(m = mean(SubjectiveLearning_Interim)) %>%
+  pull(m) %>%
   mean()
 
 
@@ -101,7 +112,7 @@ ggplot(survey_data, aes(x = condition, y = SubjectiveLearning_Interim)) +
     x = element_blank(),
     y = "Subjective Sense of Learning\n(Round 14, Before Prompt)",
     color = element_blank()
-  ) + 
+  ) +
   annotate(
     "text",
     x = 1.5, y = loc_inc_vs_flat,
@@ -117,7 +128,8 @@ cronbach.alpha(survey_data %>% dplyr::select(cols_illusory_beliefs_interim))
 tidy(
   lm(
     scale(IllusoryBeliefs_Interim) ~ factor(
-      condition, levels = c("Flat", "Increasing")
+      condition,
+      levels = c("Flat", "Increasing")
     ),
     data = survey_data
   )
@@ -125,14 +137,16 @@ tidy(
 
 
 inc_vs_flat <- cohens_d(
-  IllusoryBeliefs_Interim ~ condition, 
-  data=survey_data
-) %>% 
-  pull(Cohens_d) %>% abs()
+  IllusoryBeliefs_Interim ~ condition,
+  data = survey_data
+) %>%
+  pull(Cohens_d) %>%
+  abs()
 
-loc_inc_vs_flat <- survey_data %>% 
-  group_by(condition) %>% summarize(m=mean(IllusoryBeliefs_Interim)) %>% 
-  pull(m) %>% 
+loc_inc_vs_flat <- survey_data %>%
+  group_by(condition) %>%
+  summarize(m = mean(IllusoryBeliefs_Interim)) %>%
+  pull(m) %>%
   mean()
 
 
@@ -146,13 +160,13 @@ ggplot(survey_data, aes(x = condition, y = IllusoryBeliefs_Interim)) +
     position = position_dodge(width = 0.5), show.legend = FALSE,
     size = 1.2
   ) +
-  #theme_matplotlib() +
+  # theme_matplotlib() +
   scale_color_manual(values = c("#1f1e1e", "red", "green")) +
   labs(
     x = element_blank(),
     y = "Endorsement of Illusory Corr.\n(Round 14, Before Prompt)",
     color = element_blank()
-  ) + 
+  ) +
   annotate(
     "text",
     x = 1.5, y = loc_inc_vs_flat,
@@ -171,14 +185,13 @@ ggplot(survey_data, aes(x = condition, y = SubjectiveLearning_Final, color = mes
     position = position_dodge(width = 0.5), show.legend = FALSE,
     size = 1.2
   ) +
-  #theme_matplotlib() +
-  scale_color_manual(values = c("blue3",  "green3", "red3")) +
+  # theme_matplotlib() +
+  scale_color_manual(values = c("blue3", "green3", "red3")) +
   labs(
     x = element_blank(),
     y = "Subjective Sense of Learning\n(Round 20, After Prompt)",
     color = element_blank()
   )
-
 
 
 ggplot(survey_data, aes(x = condition, y = IllusoryBeliefs_Final, color = message_type)) +
@@ -191,8 +204,8 @@ ggplot(survey_data, aes(x = condition, y = IllusoryBeliefs_Final, color = messag
     position = position_dodge(width = 0.5), show.legend = FALSE,
     size = 1.2
   ) +
-  #theme_matplotlib() +
-  scale_color_manual(values = c("blue3",  "green3", "red3")) +
+  # theme_matplotlib() +
+  scale_color_manual(values = c("blue3", "green3", "red3")) +
   labs(
     x = element_blank(),
     y = "Endorsement of Illusory Corr.\n(Round 20, After Prompt)",
@@ -210,13 +223,14 @@ ggplot(survey_data, aes(x = condition, y = SubjectiveLearning_Delta, color = mes
     position = position_dodge(width = 0.5), show.legend = FALSE,
     size = 1.2
   ) +
-  #theme_matplotlib() +
-  scale_color_manual(values = c("blue3",  "green3", "red3")) +
+  # theme_matplotlib() +
+  scale_color_manual(values = c("blue3", "green3", "red3")) +
   labs(
     x = element_blank(),
     y = "Change in Subjective\nLearning (Final - Interim)",
     color = element_blank()
-  ) + geom_hline(aes(yintercept = 0), linetype="dashed")
+  ) +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")
 
 ggplot(survey_data, aes(x = condition, y = IllusoryBeliefs_Delta, color = message_type)) +
   stat_summary(
@@ -228,37 +242,46 @@ ggplot(survey_data, aes(x = condition, y = IllusoryBeliefs_Delta, color = messag
     position = position_dodge(width = 0.5), show.legend = FALSE,
     size = 1.2
   ) +
-  #theme_matplotlib() +
-  scale_color_manual(values = c("blue3",  "green3", "red3")) +
+  # theme_matplotlib() +
+  scale_color_manual(values = c("blue3", "green3", "red3")) +
   labs(
     x = element_blank(),
     y = "Change in Endorsement of\nIllusory Correlations (Final - Interim)",
     color = element_blank()
-  )+ geom_hline(aes(yintercept = 0), linetype="dashed")
+  ) +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")
 
 
-
-
-
-survey_data_prepost <- survey_data %>% pivot_longer(c(IllusoryBeliefs_Interim,
-                                                      IllusoryBeliefs_Final,
-                                                      SubjectiveLearning_Interim,
-                                                      SubjectiveLearning_Final)) %>% 
-  mutate(Variable=
-           str_split(name, "_") %>% 
-           map_chr(~ .x[[1]]) %>% 
-           factor(levels=c("SubjectiveLearning", "IllusoryBeliefs"),
-                  labels=c("Subj. Sense of Learning",
-                           "Endorsement of Illusory Corr.")),
-         Timing=str_split(name, "_") %>% map_chr(~ .x[[2]]) %>% 
-           factor(levels=c("Interim", "Final"),
-                  labels=c("Interim\nMeasure", "Final\nMeasure"))
+survey_data_prepost <- survey_data %>%
+  pivot_longer(c(
+    IllusoryBeliefs_Interim,
+    IllusoryBeliefs_Final,
+    SubjectiveLearning_Interim,
+    SubjectiveLearning_Final
+  )) %>%
+  mutate(
+    Variable =
+      str_split(name, "_") %>%
+        map_chr(~ .x[[1]]) %>%
+        factor(
+          levels = c("SubjectiveLearning", "IllusoryBeliefs"),
+          labels = c(
+            "Subj. Sense of Learning",
+            "Endorsement of Illusory Corr."
+          )
+        ),
+    Timing = str_split(name, "_") %>% map_chr(~ .x[[2]]) %>%
+      factor(
+        levels = c("Interim", "Final"),
+        labels = c("Interim\nMeasure", "Final\nMeasure")
+      )
   )
 
 
-
-ggplot(survey_data_prepost, 
-       aes(x = Timing, y = scale(value), color=message_type)) +
+ggplot(
+  survey_data_prepost,
+  aes(x = Timing, y = scale(value), color = message_type)
+) +
   stat_summary(
     fun = mean, geom = "point", position = position_dodge(width = 0.25),
     size = 4
@@ -270,38 +293,42 @@ ggplot(survey_data_prepost,
   ) +
   stat_summary(
     fun = mean, geom = "line",
-    aes(group=message_type),
+    aes(group = message_type),
     position = position_dodge(width = 0.25), show.legend = FALSE,
-    size = .8, linetype="dashed"
+    size = .8, linetype = "dashed"
   ) +
-  
   theme_matplotlib() +
   scale_color_manual(values = c("#1f1e1e", "green3", "red3")) +
   labs(
     x = element_blank(),
     y = "Subjective Sense of Learning",
     color = element_blank()
-  ) + 
-  facet_grid(Variable~condition, scales="free_y")
+  ) +
+  facet_grid(Variable ~ condition, scales = "free_y")
 
 
-
-testing_strategy <- survey_data %>% 
-  dplyr::select(turkid, condid, message_type,
-                Positive_Test_First, Positive_Test_Second,
-                Negative_Test_First, Negative_Test_Second) %>% 
-  pivot_longer(cols = c(Positive_Test_First, Positive_Test_Second,
-                        Negative_Test_First, Negative_Test_Second)) %>% 
-  mutate(Strategy=str_split(name, "_") %>% map_chr(~ .x[[1]]),
-         Timing=str_split(name, "_") %>% map_chr(~ .x[[3]])) 
+testing_strategy <- survey_data %>%
+  dplyr::select(
+    turkid, condid, message_type,
+    Positive_Test_First, Positive_Test_Second,
+    Negative_Test_First, Negative_Test_Second
+  ) %>%
+  pivot_longer(cols = c(
+    Positive_Test_First, Positive_Test_Second,
+    Negative_Test_First, Negative_Test_Second
+  )) %>%
+  mutate(
+    Strategy = str_split(name, "_") %>% map_chr(~ .x[[1]]),
+    Timing = str_split(name, "_") %>% map_chr(~ .x[[3]])
+  )
 
 testing_strategy %>%
   group_by(message_type, Timing, Strategy) %>%
   count(value) %>%
-  ggplot(aes(x=value, y=n, fill=message_type)) +
-  geom_col(position=position_dodge2(), width=.2) +
-  facet_grid(Strategy~Timing) +
-  scale_fill_manual(values = c("blue3",  "green3", "red3"))
+  ggplot(aes(x = value, y = n, fill = message_type)) +
+  geom_col(position = position_dodge2(), width = .2) +
+  facet_grid(Strategy ~ Timing) +
+  scale_fill_manual(values = c("blue3", "green3", "red3"))
 
 
 # 6. Slope Detection Analysis
@@ -309,8 +336,10 @@ testing_strategy %>%
 # Recode Slope: 1 = Increasing, 2 = Flat, 3 = Decreasing
 survey_data <- survey_data %>%
   mutate(
-    perceived_slope = factor(Slope, levels = c(1, 2, 3),
-                             labels = c("Increasing", "Flat", "Decreasing")),
+    perceived_slope = factor(Slope,
+      levels = c(1, 2, 3),
+      labels = c("Increasing", "Flat", "Decreasing")
+    ),
     correct_detection = case_when(
       condition == "Increasing" & Slope == 1 ~ 1,
       condition == "Flat" & Slope == 2 ~ 1,
@@ -425,7 +454,8 @@ format_welch_result <- function(dv, data, group1, group2) {
   d <- data %>% filter(condition %in% c(group1, group2))
   tt <- t.test(d[[dv]][d$condition == group2], d[[dv]][d$condition == group1])
   cd <- cohens_d(as.formula(paste(dv, "~ condition")), data = d) %>%
-    pull(Cohens_d) %>% abs()
+    pull(Cohens_d) %>%
+    abs()
   p_formatted <- if (tt$p.value < .001) "p < .001" else sprintf("p = %.3f", tt$p.value)
   sprintf("t(%.1f) = %.2f, %s, d = %.2f", tt$parameter, abs(tt$statistic), p_formatted, cd)
 }
@@ -436,32 +466,47 @@ manuscript_results <- list()
 manuscript_results$collected_n <- survey_data_all %>% nrow()
 manuscript_results$final_n <- survey_data %>% nrow()
 n_by_cond <- survey_data %>% count(condition)
-manuscript_results$n_flat <- n_by_cond %>% filter(condition == "Flat") %>% pull(n)
-manuscript_results$n_increasing <- n_by_cond %>% filter(condition == "Increasing") %>% pull(n)
+manuscript_results$n_flat <- n_by_cond %>%
+  filter(condition == "Flat") %>%
+  pull(n)
+manuscript_results$n_increasing <- n_by_cond %>%
+  filter(condition == "Increasing") %>%
+  pull(n)
 
 # Cronbach's alpha values
 manuscript_results$alpha_subjective_learning_interim <- survey_data %>%
   dplyr::select(all_of(cols_subj_learn_interim)) %>%
-  cronbach.alpha() %>% pluck("alpha") %>% round(2)
+  cronbach.alpha() %>%
+  pluck("alpha") %>%
+  round(2)
 
 manuscript_results$alpha_illusory_beliefs_interim <- survey_data %>%
   dplyr::select(all_of(cols_illusory_beliefs_interim)) %>%
-  cronbach.alpha() %>% pluck("alpha") %>% round(2)
+  cronbach.alpha() %>%
+  pluck("alpha") %>%
+  round(2)
 
 manuscript_results$alpha_subjective_learning_final <- survey_data %>%
   dplyr::select(all_of(cols_subj_learn_final)) %>%
-  cronbach.alpha() %>% pluck("alpha") %>% round(2)
+  cronbach.alpha() %>%
+  pluck("alpha") %>%
+  round(2)
 
 manuscript_results$alpha_illusory_beliefs_final <- survey_data %>%
   dplyr::select(all_of(cols_illusory_beliefs_final)) %>%
-  cronbach.alpha() %>% pluck("alpha") %>% round(2)
+  cronbach.alpha() %>%
+  pluck("alpha") %>%
+  round(2)
 
 # Descriptive statistics (M, SD) by condition for interim measures
 for (dv in c("SubjectiveLearning_Interim", "IllusoryBeliefs_Interim")) {
   dv_label <- tolower(gsub("([A-Z])", "_\\1", sub("_Interim", "", dv))) %>%
-    sub("^_", "", .) %>% paste0("_interim")
+    sub("^_", "", .) %>%
+    paste0("_interim")
   for (cond in c("Flat", "Increasing")) {
-    vals <- survey_data %>% filter(condition == cond) %>% pull(!!sym(dv))
+    vals <- survey_data %>%
+      filter(condition == cond) %>%
+      pull(!!sym(dv))
     prefix <- paste0(dv_label, "_", tolower(cond))
     manuscript_results[[paste0(prefix, "_m")]] <- round(mean(vals), 2)
     manuscript_results[[paste0(prefix, "_sd")]] <- round(sd(vals), 2)
@@ -471,9 +516,12 @@ for (dv in c("SubjectiveLearning_Interim", "IllusoryBeliefs_Interim")) {
 # Descriptive statistics (M, SD) by condition for final measures
 for (dv in c("SubjectiveLearning_Final", "IllusoryBeliefs_Final")) {
   dv_label <- tolower(gsub("([A-Z])", "_\\1", sub("_Final", "", dv))) %>%
-    sub("^_", "", .) %>% paste0("_final")
+    sub("^_", "", .) %>%
+    paste0("_final")
   for (cond in c("Flat", "Increasing")) {
-    vals <- survey_data %>% filter(condition == cond) %>% pull(!!sym(dv))
+    vals <- survey_data %>%
+      filter(condition == cond) %>%
+      pull(!!sym(dv))
     prefix <- paste0(dv_label, "_", tolower(cond))
     manuscript_results[[paste0(prefix, "_m")]] <- round(mean(vals), 2)
     manuscript_results[[paste0(prefix, "_sd")]] <- round(sd(vals), 2)
@@ -508,13 +556,17 @@ model_ib_json <- lm(
   data = survey_data
 )
 model_sl_inc_json <- lm(scale(SubjectiveLearning_Final) ~ message_type + SubjectiveLearning_Interim,
-                        data = survey_data %>% filter(condition == "Increasing"))
+  data = survey_data %>% filter(condition == "Increasing")
+)
 model_sl_flat_json <- lm(scale(SubjectiveLearning_Final) ~ message_type + SubjectiveLearning_Interim,
-                         data = survey_data %>% filter(condition == "Flat"))
+  data = survey_data %>% filter(condition == "Flat")
+)
 model_ib_inc_json <- lm(scale(IllusoryBeliefs_Final) ~ message_type + IllusoryBeliefs_Interim,
-                        data = survey_data %>% filter(condition == "Increasing"))
+  data = survey_data %>% filter(condition == "Increasing")
+)
 model_ib_flat_json <- lm(scale(IllusoryBeliefs_Final) ~ message_type + IllusoryBeliefs_Interim,
-                         data = survey_data %>% filter(condition == "Flat"))
+  data = survey_data %>% filter(condition == "Flat")
+)
 
 fmt_coef <- function(model, term_name) {
   row <- tidy(model) %>% filter(term == term_name)
@@ -528,19 +580,19 @@ nt <- "message_typeNegative\nTest"
 pt_int <- "conditionIncreasing:message_typePositive\nTest"
 nt_int <- "conditionIncreasing:message_typeNegative\nTest"
 
-manuscript_results$ancova_sl_increasing_pt       <- fmt_coef(model_sl_inc_json,  pt)
-manuscript_results$ancova_sl_increasing_nt       <- fmt_coef(model_sl_inc_json,  nt)
-manuscript_results$ancova_sl_flat_pt             <- fmt_coef(model_sl_flat_json, pt)
-manuscript_results$ancova_sl_flat_nt             <- fmt_coef(model_sl_flat_json, nt)
-manuscript_results$ancova_sl_interaction_pt_trend <- fmt_coef(model_sl_json,     pt_int)
-manuscript_results$ancova_sl_interaction_nt_trend <- fmt_coef(model_sl_json,     nt_int)
+manuscript_results$ancova_sl_increasing_pt <- fmt_coef(model_sl_inc_json, pt)
+manuscript_results$ancova_sl_increasing_nt <- fmt_coef(model_sl_inc_json, nt)
+manuscript_results$ancova_sl_flat_pt <- fmt_coef(model_sl_flat_json, pt)
+manuscript_results$ancova_sl_flat_nt <- fmt_coef(model_sl_flat_json, nt)
+manuscript_results$ancova_sl_interaction_pt_trend <- fmt_coef(model_sl_json, pt_int)
+manuscript_results$ancova_sl_interaction_nt_trend <- fmt_coef(model_sl_json, nt_int)
 
-manuscript_results$ancova_ib_increasing_pt       <- fmt_coef(model_ib_inc_json,  pt)
-manuscript_results$ancova_ib_increasing_nt       <- fmt_coef(model_ib_inc_json,  nt)
-manuscript_results$ancova_ib_flat_pt             <- fmt_coef(model_ib_flat_json, pt)
-manuscript_results$ancova_ib_flat_nt             <- fmt_coef(model_ib_flat_json, nt)
-manuscript_results$ancova_ib_interaction_pt_trend <- fmt_coef(model_ib_json,     pt_int)
-manuscript_results$ancova_ib_interaction_nt_trend <- fmt_coef(model_ib_json,     nt_int)
+manuscript_results$ancova_ib_increasing_pt <- fmt_coef(model_ib_inc_json, pt)
+manuscript_results$ancova_ib_increasing_nt <- fmt_coef(model_ib_inc_json, nt)
+manuscript_results$ancova_ib_flat_pt <- fmt_coef(model_ib_flat_json, pt)
+manuscript_results$ancova_ib_flat_nt <- fmt_coef(model_ib_flat_json, nt)
+manuscript_results$ancova_ib_interaction_pt_trend <- fmt_coef(model_ib_json, pt_int)
+manuscript_results$ancova_ib_interaction_nt_trend <- fmt_coef(model_ib_json, nt_int)
 
 write_json(manuscript_results, here("Results", "Study4_statistical_results.json"), pretty = TRUE, auto_unbox = TRUE)
 
@@ -563,8 +615,10 @@ cell_means <- survey_data %>%
     `Illusory Correlations` = sprintf("%.2f (%.2f)", ib_m, ib_sd),
     N = n
   ) %>%
-  dplyr::select(Slope = condition, `Testing Strategy` = message_type,
-                N, `Subjective Learning`, `Illusory Correlations`)
+  dplyr::select(
+    Slope = condition, `Testing Strategy` = message_type,
+    N, `Subjective Learning`, `Illusory Correlations`
+  )
 
 print(cell_means, n = Inf)
 
@@ -592,13 +646,13 @@ pred_sl <- predictions(model_sl) %>%
   mutate(DV = "Subjective Learning")
 
 pred_ib <- predictions(model_ib) %>%
-  mutate(DV = "Endorsement of Illusory Correlations")
+  mutate(DV = "Endorsement of Cue-Outcome Relationships")
 
 pred_combined <- bind_rows(pred_sl, pred_ib) %>%
   mutate(
     DV = factor(DV, levels = c(
       "Subjective Learning",
-      "Endorsement of Illusory Correlations"
+      "Endorsement of Cue-Outcome Relationships"
     )),
     message_type = factor(message_type,
       levels = levels(survey_data$message_type),
@@ -643,13 +697,243 @@ ggplot(
     color = element_blank(),
     shape = element_blank()
   ) +
+  coord_cartesian(ylim = c(-.8, .6)) +
   theme(
     legend.position = "inside",
     legend.position.inside = c(0.12, 0.82),
     legend.direction = "vertical",
     legend.background = element_rect(fill = "white", color = NA)
   )
+
 ggsave(
   here("Figures", "Figure 5.png"),
   dpi = 400, width = 9, height = 5, units = "in", bg = "white"
 )
+
+# Animation for slides:
+
+ggplot(
+  pred_combined %>% filter(message_type == "Control"),
+  aes(x = condition, y = estimate, color = message_type, shape = message_type)
+) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    aes(group = message_type),
+    position = position_dodge(width = 0.5),
+    linetype = "dashed",
+    alpha = .5
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    position = position_dodge(width = 0.5),
+    size = 4
+  ) +
+  stat_summary(
+    fun.data = mean_cl_boot,
+    geom = "errorbar",
+    width = 0,
+    position = position_dodge(width = 0.5),
+    show.legend = FALSE,
+    linewidth = 1.2
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black", linewidth = 0.4) +
+  facet_wrap(~DV) +
+  theme_matplotlib() +
+  scale_color_manual(values = c("#808080", "#e6960a", "#6a3d9a")) +
+  scale_shape_manual(values = c(16, 18, 15)) +
+  labs(
+    x = element_blank(),
+    y = "Change in Beliefs from Interim\n(Standardized Marginal Means from Model)",
+    color = element_blank(),
+    shape = element_blank()
+  ) +
+  coord_cartesian(ylim = c(-.8, .6)) +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.12, 0.82),
+    legend.direction = "vertical",
+    legend.background = element_rect(fill = "white", color = NA)
+  )
+
+ggsave(
+  here("Figures", "Figure 5_a.png"),
+  dpi = 400, width = 9, height = 5, units = "in", bg = "white"
+)
+
+
+ggplot(
+  pred_combined %>% filter(message_type != "Negative\nTest"),
+  aes(x = condition, y = estimate, color = message_type, shape = message_type)
+) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    aes(group = message_type),
+    position = position_dodge(width = 0.5),
+    linetype = "dashed",
+    alpha = .5
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    position = position_dodge(width = 0.5),
+    size = 4
+  ) +
+  stat_summary(
+    fun.data = mean_cl_boot,
+    geom = "errorbar",
+    width = 0,
+    position = position_dodge(width = 0.5),
+    show.legend = FALSE,
+    linewidth = 1.2
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black", linewidth = 0.4) +
+  facet_wrap(~DV) +
+  theme_matplotlib() +
+  scale_color_manual(values = c("#808080", "#e6960a", "#6a3d9a")) +
+  scale_shape_manual(values = c(16, 18, 15)) +
+  coord_cartesian(ylim = c(-.8, .6)) +
+  labs(
+    x = element_blank(),
+    y = "Change in Beliefs from Interim\n(Standardized Marginal Means from Model)",
+    color = element_blank(),
+    shape = element_blank()
+  ) +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.12, 0.82),
+    legend.direction = "vertical",
+    legend.background = element_rect(fill = "white", color = NA)
+  )
+
+ggsave(
+  here("Figures", "Figure 5_b.png"),
+  dpi = 400, width = 9, height = 5, units = "in", bg = "white"
+)
+
+ggplot(
+  pred_combined,
+  aes(x = condition, y = estimate, color = message_type, shape = message_type)
+) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    aes(group = message_type),
+    position = position_dodge(width = 0.5),
+    linetype = "dashed",
+    alpha = .5
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    position = position_dodge(width = 0.5),
+    size = 4
+  ) +
+  stat_summary(
+    fun.data = mean_cl_boot,
+    geom = "errorbar",
+    width = 0,
+    position = position_dodge(width = 0.5),
+    show.legend = FALSE,
+    linewidth = 1.2
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black", linewidth = 0.4) +
+  facet_wrap(~DV) +
+  theme_matplotlib() +
+  scale_color_manual(values = c("#808080", "#e6960a", "#6a3d9a")) +
+  scale_shape_manual(values = c(16, 18, 15)) +
+  coord_cartesian(ylim = c(-.8, .6)) +
+  labs(
+    x = element_blank(),
+    y = "Change in Beliefs from Interim\n(Standardized Marginal Means from Model)",
+    color = element_blank(),
+    shape = element_blank()
+  ) +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.12, 0.82),
+    legend.direction = "vertical",
+    legend.background = element_rect(fill = "white", color = NA)
+  )
+
+ggsave(
+  here("Figures", "Figure 5_c.png"),
+  dpi = 400, width = 9, height = 5, units = "in", bg = "white"
+)
+
+
+# Scrap: attempted to plot final beliefs
+
+final_combined <- survey_data %>%
+  dplyr::select(
+    c(
+      SubjectiveLearning_Final, IllusoryBeliefs_Final,
+      turkid, message_type, condition
+    )
+  ) %>%
+  pivot_longer(c(SubjectiveLearning_Final, IllusoryBeliefs_Final),
+    names_to = "DV", values_to = "estimate"
+  ) %>%
+  group_by(DV) %>%
+  mutate(estimate = scale(estimate)) %>%
+  ungroup() %>%
+  mutate(
+    DV = factor(DV, levels = c(
+      "SubjectiveLearning_Final",
+      "IllusoryBeliefs_Final"
+    ), labels = c(
+      "Subjective Learning",
+      "Endorsement of Illusory Correlations"
+    )),
+    message_type = factor(message_type,
+      levels = levels(survey_data$message_type),
+      labels = c("Control", "Positive\nTest", "Negative\nTest")
+    )
+  )
+
+
+ggplot(
+  final_combined,
+  aes(x = condition, y = estimate, color = message_type, shape = message_type)
+) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    aes(group = message_type),
+    position = position_dodge(width = 0.5),
+    linetype = "dashed",
+    alpha = .5
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    position = position_dodge(width = 0.5),
+    size = 4
+  ) +
+  stat_summary(
+    fun.data = mean_cl_boot,
+    geom = "errorbar",
+    width = 0,
+    position = position_dodge(width = 0.5),
+    show.legend = FALSE,
+    linewidth = 1.2
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black", linewidth = 0.4) +
+  facet_wrap(~DV) +
+  theme_matplotlib() +
+  scale_color_manual(values = c("#808080", "#e6960a", "#6a3d9a")) +
+  scale_shape_manual(values = c(16, 18, 15)) +
+  labs(
+    x = element_blank(),
+    y = "Final Beliefs",
+    color = element_blank(),
+    shape = element_blank()
+  ) +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.12, 0.82),
+    legend.direction = "vertical",
+    legend.background = element_rect(fill = "white", color = NA)
+  )

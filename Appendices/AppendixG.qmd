@@ -332,7 +332,7 @@ survey_data_clean %>%
   guides(color = "none")
 ```
 
-### Illusory Beliefs Index
+### Endorsement of Cue-Outcome Relationships
 
 ```{r}
 #| fig-height: 3.5

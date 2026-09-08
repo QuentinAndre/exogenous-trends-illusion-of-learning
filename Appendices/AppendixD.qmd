@@ -24,7 +24,7 @@ We conducted a conceptual replication of Study 1 in which one of the cues reliab
 
 Participants played the same investment simulation as in Study 1, with two modifications. First, one of the three continuous company attributes (Company Valuation, Market Size, or Number of Competitors) was randomly selected to influence returns, while the other two continuous attributes and the categorical attribute (Sector of Activity) remained non-diagnostic. Second, we included only the Increasing and Decreasing conditions—the Flat condition was dropped to ensure a matched signal-to-noise ratio for detecting the diagnostic cue across conditions.
 
-After 20 rounds, participants completed a post-game survey measuring (1) their subjective sense of learning—using the same three items as Study 1 (α = .94)—and (2) their endorsement of illusory correlations about the two non-diagnostic continuous attributes. Following the pre-registered interim analysis plan, data were collected in two waves of 400 participants each. The study was pre-registered on AsPredicted.org ([#db3p-fnz6](https://aspredicted.org/db3p-fnz6)).
+After 20 rounds, participants completed a post-game survey measuring (1) their subjective sense of learning—using the same three items as Study 1 (α = .94)—and (2) their endorsement of cue-outcome relationships involving the two non-diagnostic continuous attributes. Following the pre-registered interim analysis plan, data were collected in two waves of 400 participants each. The study was pre-registered on AsPredicted.org ([#db3p-fnz6](https://aspredicted.org/db3p-fnz6)).
 
 ## Preamble: Data Loadings and Wrangling
 
